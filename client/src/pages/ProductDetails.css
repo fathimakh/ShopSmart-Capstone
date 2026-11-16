@@ -4,29 +4,6 @@
   gap: var(--space-5);
 }
 
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  font-size: 0.82rem;
-  color: var(--color-muted);
-  flex-wrap: wrap;
-}
-
-.breadcrumb a {
-  color: var(--color-primary);
-  font-weight: 500;
-}
-
-.breadcrumb a:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb span[aria-current] {
-  color: var(--color-text);
-  font-weight: 500;
-}
-
 .product-details-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);

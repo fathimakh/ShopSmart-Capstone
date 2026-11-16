@@ -233,6 +233,31 @@ button {
   color: var(--color-primary);
 }
 
+/* Shared by the product, category and order pages, so it is styled on whichever of them
+   loads first. */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 0.82rem;
+  color: var(--color-muted);
+  flex-wrap: wrap;
+}
+
+.breadcrumb a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.breadcrumb span[aria-current] {
+  color: var(--color-text);
+  font-weight: 500;
+}
+
 .skeleton {
   background: linear-gradient(90deg, #edeff5 25%, #f6f7fb 50%, #edeff5 75%);
   background-size: 200% 100%;
