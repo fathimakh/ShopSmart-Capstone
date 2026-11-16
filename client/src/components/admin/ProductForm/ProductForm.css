@@ -1,0 +1,161 @@
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.product-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-4);
+  min-width: 0;
+}
+
+/* A legend cannot be laid out by the fieldset's flex rules, so it is floated to sit in
+   the card like a heading. */
+.product-form-section legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.product-form-grid {
+  clear: both;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.product-form-wide {
+  grid-column: 1 / -1;
+}
+
+.product-form textarea {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.product-form-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-bg);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.product-form-note svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.product-form-note.is-active {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 500;
+}
+
+.product-form-images {
+  clear: both;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.product-form-image-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.product-form-preview {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  padding: var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: #f2f3f8;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  text-align: center;
+}
+
+.product-form-preview img {
+  width: 160px;
+  height: 160px;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.product-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.product-form-actions .btn[aria-disabled='true'] {
+  opacity: 0.7;
+  cursor: progress;
+}
+
+.product-form-messages {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.product-form-error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background-color: #fef2f2;
+  color: #991b1b;
+  font-size: 0.875rem;
+}
+
+.product-form-error svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.product-form-error:focus {
+  outline: 3px solid var(--color-danger);
+  outline-offset: 2px;
+}
+
+.product-form-notice {
+  color: var(--color-muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 700px) {
+  .product-form-grid,
+  .product-form-images {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .product-form-section {
+    padding: var(--space-3);
+  }
+
+  .product-form-preview {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-form-actions .btn {
+    width: 100%;
+  }
+}

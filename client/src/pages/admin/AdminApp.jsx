@@ -4,6 +4,8 @@ import { FiArrowLeft, FiBox, FiGrid, FiPackage, FiSettings, FiUsers } from 'reac
 import { useAuth } from '../../context/AuthContext'
 import AdminToasts from '../../components/admin/AdminToasts/AdminToasts'
 import AdminDashboard from './AdminDashboard'
+import AdminProducts from './AdminProducts'
+import AdminProductEdit from './AdminProductEdit'
 import AdminNotFound from './AdminNotFound'
 import './AdminApp.css'
 
@@ -83,6 +85,9 @@ function AdminApp() {
         <div className="admin-content" ref={content}>
           <Routes>
             <Route index element={<AdminDashboard />} />
+            <Route path="products" element={<AdminProducts />} />
+            <Route path="products/new" element={<AdminProductEdit />} />
+            <Route path="products/:id/edit" element={<AdminProductEdit />} />
             <Route path="*" element={<AdminNotFound />} />
           </Routes>
         </div>

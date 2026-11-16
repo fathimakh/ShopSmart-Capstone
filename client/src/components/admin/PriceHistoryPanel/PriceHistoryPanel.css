@@ -1,0 +1,96 @@
+.price-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+}
+
+.price-history h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.05rem;
+}
+
+.price-history h2 svg {
+  color: var(--color-primary);
+}
+
+.price-history-summary,
+.price-history-forecast {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.price-history-forecast strong {
+  color: var(--color-text);
+}
+
+.price-history-spark {
+  width: 100%;
+  height: 48px;
+}
+
+.price-history-spark polyline {
+  stroke: var(--color-primary);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.price-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.price-history-table th,
+.price-history-table td {
+  padding: 6px var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.price-history-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-history-table tbody th {
+  font-weight: 500;
+}
+
+.price-history-table thead th {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.price-history-table thead th:last-child {
+  text-align: right;
+}
+
+.price-history-table tr.is-new {
+  background-color: var(--color-primary-soft);
+}
+
+.price-history-new {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.price-history-skeleton {
+  height: 180px;
+}
+
+@media (max-width: 700px) {
+  .price-history {
+    padding: var(--space-3);
+  }
+}
