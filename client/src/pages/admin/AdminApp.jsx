@@ -8,6 +8,7 @@ import AdminProducts from './AdminProducts'
 import AdminProductEdit from './AdminProductEdit'
 import AdminOrders from './AdminOrders'
 import AdminOrderDetails from './AdminOrderDetails'
+import AdminUsers from './AdminUsers'
 import AdminNotFound from './AdminNotFound'
 import './AdminApp.css'
 
@@ -92,6 +93,7 @@ function AdminApp() {
             <Route path="products/:id/edit" element={<AdminProductEdit />} />
             <Route path="orders" element={<AdminOrders />} />
             <Route path="orders/:ref" element={<AdminOrderDetails />} />
+            <Route path="users" element={<AdminUsers />} />
             <Route path="*" element={<AdminNotFound />} />
           </Routes>
         </div>

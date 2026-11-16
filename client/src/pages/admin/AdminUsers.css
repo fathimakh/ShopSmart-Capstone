@@ -1,0 +1,46 @@
+.admin-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+.admin-you {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-accent-soft);
+  color: #8a4d03;
+  font-size: 0.72rem;
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+.admin-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background-color: #f1f2f6;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-role.is-admin {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.admin-users .admin-row-actions .btn-outline {
+  min-width: 120px;
+  justify-content: center;
+}
