@@ -10,6 +10,7 @@ import {
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import Order from '../models/order.js'
+import User from '../models/user.js'
 
 useTestDatabase('admin')
 
@@ -89,5 +90,92 @@ describe('GET /api/admin/summary', () => {
     const { token } = await createUser()
     assert.equal((await api().get('/api/admin/summary').expect(401)).body.code, 'NO_TOKEN')
     assert.equal((await api().get('/api/admin/summary').set(bearer(token)).expect(403)).body.code, 'FORBIDDEN')
+  })
+})
+
+describe('Account management', () => {
+  it('lists accounts with a search, a role filter, pages and order counts', async () => {
+    const { token: adminToken } = await createAdmin({ name: 'Store Owner' })
+    const { token } = await createUser({ name: 'Farah Khan', email: 'farah@example.com' })
+    await createUser({ name: 'Noor', email: 'noor@example.com' })
+    await placeOrder(token, await createProduct())
+
+    const search = await api().get('/api/users?q=FARAH').set(bearer(adminToken)).expect(200)
+    assert.equal(search.body.users.length, 1)
+    const [farah] = search.body.users
+    assert.equal(farah.email, 'farah@example.com')
+    assert.equal(farah.orderCount, 1)
+    assert.equal('password' in farah, false)
+    assert.equal('tokenVersion' in farah, false)
+
+    const admins = await api().get('/api/users?role=admin').set(bearer(adminToken)).expect(200)
+    assert.ok(admins.body.users.every((user) => user.role === 'admin'))
+
+    const paged = await api().get('/api/users?limit=1&page=2').set(bearer(adminToken)).expect(200)
+    assert.equal(paged.body.users.length, 1)
+    assert.equal(paged.body.pagination.limit, 1)
+    assert.equal(paged.body.pagination.page, 2)
+
+    await api().get('/api/users?role=owner').set(bearer(adminToken)).expect(400)
+  })
+
+  it('promotes a shopper, whose current session gets admin access at once', async () => {
+    const { token: adminToken } = await createAdmin()
+    const { user, token } = await createUser()
+    await api().get('/api/admin/summary').set(bearer(token)).expect(403)
+
+    const res = await api().patch(`/api/users/${user._id}`).set(bearer(adminToken)).send({ role: 'admin' }).expect(200)
+    assert.equal(res.body.user.role, 'admin')
+    await api().get('/api/admin/summary').set(bearer(token)).expect(200)
+
+    await api().patch(`/api/users/${user._id}`).set(bearer(adminToken)).send({ role: 'customer' }).expect(200)
+    await api().get('/api/admin/summary').set(bearer(token)).expect(403)
+  })
+
+  it('stops admins from changing their own role or deleting themselves', async () => {
+    const { user, token } = await createAdmin()
+    const role = await api().patch(`/api/users/${user._id}`).set(bearer(token)).send({ role: 'customer' }).expect(409)
+    assert.equal(role.body.code, 'SELF_ROLE_CHANGE')
+    const remove = await api().delete(`/api/users/${user._id}`).set(bearer(token)).expect(409)
+    assert.equal(remove.body.code, 'SELF_DELETE')
+  })
+
+  it('validates the role and the account id', async () => {
+    const { token } = await createAdmin()
+    const { user } = await createUser()
+    const invalid = await api().patch(`/api/users/${user._id}`).set(bearer(token)).send({ role: 'owner' }).expect(400)
+    assert.equal(invalid.body.errors[0].field, 'role')
+    assert.equal((await api().patch('/api/users/123').set(bearer(token)).send({ role: 'admin' }).expect(400)).body.code, 'INVALID_ID')
+    const missing = await api().delete('/api/users/0123456789abcdef01234567').set(bearer(token)).expect(404)
+    assert.equal(missing.body.code, 'USER_NOT_FOUND')
+  })
+
+  it('deletes an account, ends its sessions and keeps its orders', async () => {
+    const { token: adminToken } = await createAdmin()
+    const { user, token } = await createUser()
+    const order = await placeOrder(token, await createProduct())
+
+    const res = await api().delete(`/api/users/${user._id}`).set(bearer(adminToken)).expect(200)
+    assert.equal(res.body.message, `Account ${user.email} deleted`)
+    assert.equal(await User.exists({ _id: user._id }), null)
+
+    const session = await api().get('/api/auth/me').set(bearer(token)).expect(401)
+    assert.equal(session.body.code, 'USER_NOT_FOUND')
+
+    const kept = await api().get(`/api/orders/${order.number}`).set(bearer(adminToken)).expect(200)
+    assert.equal(kept.body.order.user, null)
+  })
+
+  it('is only for admins', async () => {
+    const { user, token } = await createUser()
+    const requests = [
+      ['get', '/api/users', undefined],
+      ['patch', `/api/users/${user._id}`, { role: 'admin' }],
+      ['delete', `/api/users/${user._id}`, undefined]
+    ]
+    for (const [method, path, body] of requests) {
+      assert.equal((await api()[method](path).send(body).expect(401)).body.code, 'NO_TOKEN', `${method} ${path}`)
+      assert.equal((await api()[method](path).set(bearer(token)).send(body).expect(403)).body.code, 'FORBIDDEN', `${method} ${path}`)
+    }
   })
 })
