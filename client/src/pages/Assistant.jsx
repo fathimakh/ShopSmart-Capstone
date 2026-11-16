@@ -6,6 +6,8 @@ import useShoppingAssistant from '../hooks/useShoppingAssistant'
 import usePageTitle from '../hooks/usePageTitle'
 import ProductCard from '../components/ProductCard/ProductCard'
 import { pluralize } from '../utils/format'
+import { describeEngine } from '../utils/aiSearch'
+import { getAiStatus } from '../services/ai'
 import './Assistant.css'
 
 const openers = [
@@ -26,13 +28,29 @@ function Assistant() {
   const navigate = useNavigate()
   const thread = useRef(null)
   const pendingQuery = location.state?.query
+  const handledHandoff = useRef(null)
+  // true or false once the server has said whether Gemini is set up, null until then.
+  const [aiEnabled, setAiEnabled] = useState(null)
 
-  // A question typed on the shop page is carried over and asked once on arrival.
+  useEffect(() => {
+    let active = true
+    getAiStatus().then((enabled) => {
+      if (active) setAiEnabled(enabled)
+    })
+    return () => {
+      active = false
+    }
+  }, [])
+
+  // A question typed on the shop page is carried over and asked once on arrival. The
+  // location key guards against StrictMode running this twice for the same handoff.
   useEffect(() => {
     if (!pendingQuery || status === 'loading') return
+    if (handledHandoff.current === location.key) return
+    handledHandoff.current = location.key
     ask(pendingQuery)
     navigate('/assistant', { replace: true, state: null })
-  }, [pendingQuery, status, ask, navigate])
+  }, [pendingQuery, status, ask, navigate, location.key])
 
   // Bring the latest question to the top of the screen so the answer reads downwards,
   // rather than dropping the shopper at the bottom of a long result list.
@@ -56,7 +74,8 @@ function Assistant() {
           keywords: message.keywords,
           chips: message.chips,
           summary: message.text,
-          source: message.source
+          source: message.source,
+          fallbackReason: message.fallbackReason || null
         }
       }
     })
@@ -74,6 +93,14 @@ function Assistant() {
             Describe what you need in your own words, then keep refining. Each answer
             remembers the one before it, so "show cheaper options" does what you expect.
           </p>
+          {aiEnabled !== null ? (
+            <p className="assistant-mode">
+              <FiCpu aria-hidden="true" />
+              {aiEnabled
+                ? 'Google Gemini reads your messages on the ShopSmart server. If it cannot answer, a simpler reader on this device steps in.'
+                : 'Gemini is not set up on this server right now, so a simpler reader on this device answers instead. It understands budgets, brands, categories and ratings.'}
+            </p>
+          ) : null}
         </div>
         {messages.length ? (
           <button type="button" className="btn btn-outline assistant-clear" onClick={clear}>
@@ -159,7 +186,7 @@ function Assistant() {
 
                 <p className="assistant-engine">
                   <FiCpu aria-hidden="true" />
-                  {message.source === 'gemini' ? 'Read by Gemini' : 'Read on this device'}
+                  {describeEngine(message)}
                 </p>
               </div>
             </article>

@@ -141,6 +141,7 @@ function Home() {
         chips={aiSearch ? aiSearch.chips : []}
         summary={aiSearch ? aiSearch.summary : ''}
         source={aiSearch ? aiSearch.source : null}
+        fallbackReason={aiSearch ? aiSearch.fallbackReason : null}
         resultCount={visibleProducts.length}
       />
 

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FiCornerDownLeft, FiCpu, FiX, FiZap } from 'react-icons/fi'
+import { describeEngine } from '../../utils/aiSearch'
 import './AiSearchPanel.css'
 
 const examples = [
@@ -9,7 +10,7 @@ const examples = [
   'womens bags on sale'
 ]
 
-function AiSearchPanel({ onSearch, onClear, chips, summary, source, resultCount }) {
+function AiSearchPanel({ onSearch, onClear, chips, summary, source, fallbackReason, resultCount }) {
   const [value, setValue] = useState('')
 
   const runSearch = (query) => {
@@ -83,7 +84,7 @@ function AiSearchPanel({ onSearch, onClear, chips, summary, source, resultCount 
 
           <p className="ai-search-engine">
             <FiCpu aria-hidden="true" />
-            {source === 'gemini' ? 'Read by Gemini' : 'Read on this device'}
+            {describeEngine({ source, fallbackReason })}
           </p>
         </div>
       ) : null}
