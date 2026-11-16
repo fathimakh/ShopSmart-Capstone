@@ -30,6 +30,10 @@
   font-size: 1.25rem;
 }
 
+.order-confirmed h1 {
+  font-size: clamp(1.4rem, 1.2rem + 1vw, 1.8rem);
+}
+
 .order-confirmed p {
   color: var(--color-muted);
   font-size: 0.9rem;
@@ -66,9 +70,136 @@
   align-items: start;
 }
 
+.order-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
 .order-items-panel,
 .order-panel {
   padding: var(--space-3);
+}
+
+.order-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.order-panel-muted {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.order-notice {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid #c7d2fe;
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: 0.9rem;
+}
+
+.order-notice.is-cancelled {
+  border-color: #fecaca;
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.order-cancel-start {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-3);
+  margin-top: var(--space-1);
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.order-cancel-button:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+.order-cancel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  background-color: #fffafa;
+  padding: var(--space-3);
+  margin-top: var(--space-1);
+}
+
+.order-cancel h3 {
+  font-size: 1rem;
+}
+
+.order-cancel > p {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.order-cancel textarea {
+  resize: vertical;
+}
+
+.order-cancel-error {
+  color: #991b1b;
+  font-size: 0.85rem;
+}
+
+.order-cancel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.order-cancel-confirm {
+  background-color: var(--color-danger);
+}
+
+.order-cancel-confirm:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.order-buy-again {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.order-buy-again a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.order-details-loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.order-details-skeleton {
+  height: 72px;
+  border-radius: var(--radius-lg);
+}
+
+.order-details-skeleton.is-tall {
+  height: 260px;
 }
 
 .order-items-panel {

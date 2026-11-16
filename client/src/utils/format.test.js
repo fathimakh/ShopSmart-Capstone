@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { formatDate, formatPrice, pluralize, titleCase } from './format'
+import {
+  formatDate,
+  formatDateTime,
+  formatPrice,
+  formatShortDate,
+  pluralize,
+  titleCase
+} from './format'
 
 describe('format', () => {
   it('formats prices in US dollars', () => {
@@ -10,6 +17,14 @@ describe('format', () => {
   it('formats dates the British way and ignores bad input', () => {
     expect(formatDate('2026-11-05T10:00:00.000Z')).toBe('5 Nov 2026')
     expect(formatDate('not a date')).toBe('')
+  })
+
+  it('adds the time of day, or keeps only day and month, when asked', () => {
+    // Noon UTC is the same calendar day in every time zone the shop is used in.
+    expect(formatDateTime('2026-11-05T12:00:00.000Z')).toMatch(/^5 Nov 2026, \d{2}:\d{2}$/)
+    expect(formatShortDate('2026-11-05T12:00:00.000Z')).toBe('5 Nov')
+    expect(formatDateTime('nope')).toBe('')
+    expect(formatShortDate(null)).toBe('')
   })
 
   it('turns slugs into labels', () => {
