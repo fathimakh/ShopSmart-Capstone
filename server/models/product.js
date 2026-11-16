@@ -54,6 +54,9 @@ const productSchema = new mongoose.Schema(
     shippingInformation: { type: String, trim: true, default: 'Ships in 3-5 business days' },
     returnPolicy: { type: String, trim: true, default: '30 days return policy' },
     minimumOrderQuantity: { type: Number, min: 1, default: 1 },
+    // Units sold, moved in the same atomic update that reserves stock at checkout and
+    // taken back when an order is cancelled, so the bestseller list needs no order scan.
+    soldCount: { type: Number, min: 0, default: 0 },
     thumbnail: { type: String, required: [true, 'An image is required'], trim: true },
     images: { type: [String], default: [] },
     priceHistory: { type: [pricePointSchema], default: [], select: false },

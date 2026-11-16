@@ -59,6 +59,7 @@ export function errorHandler(error, req, res, next) {
     code: apiError?.code || 'SERVER_ERROR'
   }
   if (apiError?.errors?.length) body.errors = apiError.errors
+  if (apiError?.details) body.details = apiError.details
 
   if (status >= 500) {
     console.error(`[${req.method} ${req.originalUrl}]`, error)

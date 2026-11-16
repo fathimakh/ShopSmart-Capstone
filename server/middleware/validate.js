@@ -1,5 +1,8 @@
+import { ORDER_NUMBER_PATTERN } from '../models/order.js'
 import ApiError from '../utils/ApiError.js'
 import { validate } from '../validators/rules.js'
+
+const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i
 
 /**
  * Checks req.body against a rule map from validators/. With partial set (updates), only
@@ -31,8 +34,6 @@ export function validateProductIdParam(req, res, next, value) {
   next()
 }
 
-const OBJECT_ID_PATTERN = /^[a-f\d]{24}$/i
-
 export function validateObjectIdParam(resource) {
   return (req, res, next, value) => {
     if (!OBJECT_ID_PATTERN.test(value)) {
@@ -41,4 +42,20 @@ export function validateObjectIdParam(resource) {
     }
     next()
   }
+}
+
+/**
+ * Orders are opened by their number (SS100001), which is what the shopper sees on the
+ * receipt, or by their _id. Either way req.orderFilter is ready for Order.findOne.
+ */
+export function validateOrderRefParam(req, res, next, value) {
+  if (OBJECT_ID_PATTERN.test(value)) {
+    req.orderFilter = { _id: value }
+  } else if (ORDER_NUMBER_PATTERN.test(value)) {
+    req.orderFilter = { number: value.toUpperCase() }
+  } else {
+    next(ApiError.badRequest('Invalid order number', 'INVALID_ID'))
+    return
+  }
+  next()
 }

@@ -1,15 +1,18 @@
 /**
  * An expected failure with an HTTP status. Thrown anywhere inside a request and turned
  * into the standard error body by middleware/errorHandler.js:
- *   { success: false, message, code, errors? }
+ *   { success: false, message, code, errors?, details? }
+ * details carries extra data the client needs to recover, such as the cart lines that
+ * ran out of stock during checkout.
  */
 export default class ApiError extends Error {
-  constructor(statusCode, message, { code, errors } = {}) {
+  constructor(statusCode, message, { code, errors, details } = {}) {
     super(message)
     this.name = 'ApiError'
     this.statusCode = statusCode
     this.code = code
     this.errors = errors
+    this.details = details
   }
 
   static badRequest(message, code = 'BAD_REQUEST') {

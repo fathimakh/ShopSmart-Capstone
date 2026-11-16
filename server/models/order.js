@@ -12,6 +12,10 @@ export const FREE_DELIVERY_THRESHOLD = 150
 export const DELIVERY_FEE = 4.99
 export const DELIVERY_DAYS = 4
 
+// Order numbers look like SS100001: the shop prefix and a number from the order counter.
+export const ORDER_NUMBER_PREFIX = 'SS'
+export const ORDER_NUMBER_PATTERN = /^SS\d{6,12}$/i
+
 function roundCurrency(value) {
   return Math.round(value * 100) / 100
 }
