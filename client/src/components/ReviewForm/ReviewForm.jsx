@@ -76,12 +76,16 @@ function ReviewForm({ initial, onSubmit, onCancel }) {
         aria-describedby={errors.rating ? 'review-rating-error' : undefined}
       >
         <legend>Your rating</legend>
-        <div className="review-stars-row" onMouseLeave={() => setHovered(0)}>
+        <div className="review-stars-row" onPointerLeave={() => setHovered(0)}>
           {STARS.map((star) => (
             <label
               key={star}
               className={star <= shown ? 'is-on' : ''}
-              onMouseEnter={() => setHovered(star)}
+              onPointerMove={(event) => {
+                // Only a real mouse previews; a tap or a layout shift under a resting
+                // pointer would otherwise override the choice made.
+                if (event.pointerType === 'mouse' && hovered !== star) setHovered(star)
+              }}
             >
               <input
                 type="radio"
@@ -90,6 +94,8 @@ function ReviewForm({ initial, onSubmit, onCancel }) {
                 checked={rating === star}
                 onChange={() => {
                   setRating(star)
+                  // A choice made with the keyboard wins over where the pointer happens to rest.
+                  setHovered(0)
                   setErrors((current) => ({ ...current, rating: undefined }))
                 }}
               />
