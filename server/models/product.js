@@ -66,6 +66,9 @@ const productSchema = new mongoose.Schema(
       transform(doc, ret) {
         ret.availabilityStatus = availabilityStatus(ret.stock)
         ret.meta = { createdAt: ret.createdAt, updatedAt: ret.updatedAt }
+        // Price history and the AI summary have their own endpoints.
+        delete ret.priceHistory
+        delete ret.reviewSummary
         delete ret._id
         delete ret.__v
         delete ret.createdAt
