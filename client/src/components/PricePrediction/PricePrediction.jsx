@@ -1,7 +1,10 @@
-import { useMemo } from 'react'
-import { FiActivity, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
-import { predictPrice } from '../../utils/pricePredict'
-import { formatPrice } from '../../utils/format'
+import { useEffect, useState } from 'react'
+import { FiActivity, FiClock, FiTrendingDown, FiTrendingUp } from 'react-icons/fi'
+import RetryNotice from '../RetryNotice/RetryNotice'
+import { fetchPriceHistory } from '../../services/api'
+import { isAbortError } from '../../services/http'
+import { buildPriceChart, toPolyline } from '../../utils/priceChart'
+import { formatDate, formatPrice, formatShortDate, pluralize } from '../../utils/format'
 import './PricePrediction.css'
 
 const CHART_WIDTH = 320
@@ -30,72 +33,115 @@ const verdicts = {
 }
 
 /**
- * Maps prices onto the SVG canvas. The y axis is flipped, because SVG measures from
- * the top down while a price chart reads from the bottom up, and a flat series would
- * divide by a zero span so it falls back to 1.
+ * The price outlook on a product page: the prices the store has recorded for the product,
+ * week by week, and the server's straight line forecast two weeks ahead with how well the
+ * line fits as its confidence.
  */
-function buildPoints(values) {
-  const highest = Math.max(...values)
-  const lowest = Math.min(...values)
-  const span = highest - lowest || 1
-  const step = (CHART_WIDTH - PADDING * 2) / (values.length - 1)
-
-  return values.map((value, index) => {
-    const x = PADDING + index * step
-    const y = PADDING + (1 - (value - lowest) / span) * (CHART_HEIGHT - PADDING * 2)
-    return [Number(x.toFixed(2)), Number(y.toFixed(2))]
-  })
-}
-
 function PricePrediction({ product }) {
-  const prediction = useMemo(() => predictPrice(product), [product])
-  const points = useMemo(
-    () => buildPoints([...prediction.history, prediction.forecast]),
-    [prediction]
-  )
+  const productId = product.id
+  const [state, setState] = useState({ status: 'loading', data: null, error: null })
+  const [attempt, setAttempt] = useState(0)
 
-  const verdict = verdicts[prediction.verdict]
+  useEffect(() => {
+    const controller = new AbortController()
+    setState({ status: 'loading', data: null, error: null })
+
+    fetchPriceHistory(productId, { signal: controller.signal })
+      .then((data) => setState({ status: 'ready', data, error: null }))
+      .catch((error) => {
+        if (isAbortError(error)) return
+        setState({ status: 'error', data: null, error })
+      })
+
+    return () => controller.abort()
+  }, [productId, attempt])
+
+  const heading = <h2 id="forecast-heading">Price outlook</h2>
+
+  if (state.status === 'loading') {
+    return (
+      <section className="price-prediction card is-loading" aria-labelledby="forecast-heading">
+        <div className="price-prediction-head">{heading}</div>
+        <div className="skeleton price-prediction-skeleton" role="status">
+          <span className="visually-hidden">Loading the price history</span>
+        </div>
+      </section>
+    )
+  }
+
+  if (state.status === 'error') {
+    return (
+      <section className="price-prediction card" aria-labelledby="forecast-heading">
+        <div className="price-prediction-head">{heading}</div>
+        <RetryNotice
+          title="We could not load the price history."
+          message={state.error.message}
+          onRetry={() => setAttempt((count) => count + 1)}
+        />
+      </section>
+    )
+  }
+
+  const { currentPrice, points, prediction } = state.data
+
+  if (!prediction || !prediction.hasEnoughData) {
+    return (
+      <section className="price-prediction card is-steady" aria-labelledby="forecast-heading">
+        <div className="price-prediction-head">{heading}</div>
+        <p className="price-prediction-short">
+          <FiClock aria-hidden="true" />
+          Not enough price history yet. The outlook appears once the store has recorded this
+          price for a few weeks.
+        </p>
+      </section>
+    )
+  }
+
+  const chart = buildPriceChart(points, prediction, {
+    width: CHART_WIDTH,
+    height: CHART_HEIGHT,
+    padding: PADDING
+  })
+  const verdict = verdicts[prediction.verdict] || verdicts.steady
   const Icon = verdict.icon
-  const historyPoints = points.slice(0, -1)
-  const forecastPoints = points.slice(-2)
-  const difference = Math.abs(prediction.forecast - product.price)
+  const difference = Math.abs(prediction.forecast - currentPrice)
+  const last = chart ? chart.forecast?.[1] || chart.history[chart.history.length - 1] : null
 
   return (
     <section className={`price-prediction card ${verdict.tone}`} aria-labelledby="forecast-heading">
       <div className="price-prediction-head">
-        <h2 id="forecast-heading">Price outlook</h2>
+        {heading}
         <span className="price-prediction-badge">
           <Icon aria-hidden="true" />
           {verdict.label}
         </span>
       </div>
 
-      <svg
-        className="price-prediction-chart"
-        viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-        role="img"
-        aria-label={`Price over the last ${prediction.weeks} weeks with a two week forecast of ${formatPrice(prediction.forecast)}`}
-      >
-        <polyline
-          className="price-prediction-line"
-          points={historyPoints.map(([x, y]) => `${x},${y}`).join(' ')}
-        />
-        <polyline
-          className="price-prediction-forecast"
-          points={forecastPoints.map(([x, y]) => `${x},${y}`).join(' ')}
-        />
-        <circle
-          className="price-prediction-dot"
-          cx={points[points.length - 1][0]}
-          cy={points[points.length - 1][1]}
-          r="4"
-        />
-      </svg>
+      {chart ? (
+        <figure className="price-prediction-figure">
+          <svg
+            className="price-prediction-chart"
+            viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+            role="img"
+            aria-label={`${pluralize(points.length, 'recorded price')} from ${formatDate(chart.from)} to ${formatDate(chart.to)}, between ${formatPrice(chart.lowest)} and ${formatPrice(chart.highest)}, then a forecast of ${formatPrice(prediction.forecast)} for ${formatDate(prediction.forecastAt)}`}
+          >
+            <polyline className="price-prediction-line" points={toPolyline(chart.history)} />
+            {chart.forecast ? (
+              <polyline className="price-prediction-forecast" points={toPolyline(chart.forecast)} />
+            ) : null}
+            <circle className="price-prediction-dot" cx={last[0]} cy={last[1]} r="4" />
+          </svg>
+          <figcaption className="price-prediction-axis" aria-hidden="true">
+            <span>{formatShortDate(chart.from)}</span>
+            <span>Forecast {formatShortDate(prediction.forecastAt)}</span>
+          </figcaption>
+        </figure>
+      ) : null}
 
       <p className="price-prediction-summary">
-        Trend fitted over {prediction.weeks} weeks points to{' '}
+        A trend fitted over {pluralize(prediction.weeks, 'week')} of recorded prices points to{' '}
         <strong>{formatPrice(prediction.forecast)}</strong> in two weeks
-        {prediction.changePercent !== 0 ? ` (${prediction.changePercent}%)` : ''}, with{' '}
+        {prediction.changePercent !== 0 ? ` (${prediction.changePercent > 0 ? '+' : ''}${prediction.changePercent}%)` : ''}, with{' '}
         {prediction.confidence}% confidence.
       </p>
       <p className="price-prediction-advice">{verdict.advice(difference)}</p>

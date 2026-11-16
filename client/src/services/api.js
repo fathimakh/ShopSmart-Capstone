@@ -63,3 +63,12 @@ export async function fetchProducts({ signal } = {}) {
   const data = await api.get('/products?limit=0', { signal, timeout: CATALOGUE_TIMEOUT })
   return data.products.map(normalizeProduct)
 }
+
+/**
+ * The prices recorded for a product, oldest first, and the server's forecast two weeks
+ * ahead (docs/API.md, Price history).
+ */
+export async function fetchPriceHistory(productId, { signal } = {}) {
+  const data = await api.get(`/products/${encodeURIComponent(productId)}/price-history`, { signal })
+  return { currentPrice: data.currentPrice, points: data.points || [], prediction: data.prediction }
+}
