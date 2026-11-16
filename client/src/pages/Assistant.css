@@ -248,7 +248,8 @@
 
 .assistant-form {
   position: sticky;
-  bottom: var(--space-2);
+  /* Above the comparison tray when it is open; it sits at the bottom of the window too. */
+  bottom: calc(var(--space-2) + var(--compare-bar-space, 0px));
   display: flex;
   gap: var(--space-2);
   padding: var(--space-2);
@@ -281,7 +282,7 @@
 
 @media (max-width: 767px) {
   .assistant-form {
-    bottom: calc(var(--bottom-nav-height) + var(--space-2));
+    bottom: calc(var(--bottom-nav-height) + var(--compare-bar-space, 0px) + var(--space-2));
   }
 }
 

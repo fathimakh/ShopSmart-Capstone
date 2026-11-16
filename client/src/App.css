@@ -23,7 +23,9 @@
 }
 
 @media (max-width: 767px) {
+  /* The bottom navigation and, when it is open, the comparison tray are fixed over the
+     page, so the end of every page needs room to scroll clear of them. */
   .app {
-    padding-bottom: var(--bottom-nav-height);
+    padding-bottom: calc(var(--bottom-nav-height) + var(--compare-bar-space, 0px));
   }
 }
