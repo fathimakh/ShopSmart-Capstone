@@ -56,13 +56,19 @@ export function CatalogProvider({ children }) {
    * product that returns one.
    */
   const updateProduct = useCallback((productId, changes) => {
-    setProducts((current) =>
-      current.map((product) => {
+    setProducts((current) => {
+      let changed = false
+      const next = current.map((product) => {
         if (product.id !== productId) return product
-        const next = typeof changes === 'function' ? changes(product) : changes
-        return { ...product, ...next }
+        const update = typeof changes === 'function' ? changes(product) : changes
+        // Nothing new (the page already shows these figures) keeps the same objects, so
+        // the pages that depend on the catalogue do not redo their work for nothing.
+        if (!Object.keys(update).some((key) => product[key] !== update[key])) return product
+        changed = true
+        return { ...product, ...update }
       })
-    )
+      return changed ? next : current
+    })
   }, [])
 
   const value = useMemo(() => {

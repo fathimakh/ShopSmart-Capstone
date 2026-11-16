@@ -8,6 +8,7 @@ import QuantityStepper from '../components/QuantityStepper/QuantityStepper'
 import RecommendationRow from '../components/RecommendationRow/RecommendationRow'
 import PricePrediction from '../components/PricePrediction/PricePrediction'
 import EmptyState from '../components/EmptyState/EmptyState'
+import ProductReviews from '../components/ProductReviews/ProductReviews'
 import { buildTextIndex } from '../utils/textIndex'
 import { getSimilarProducts } from '../utils/recommend'
 import { formatPrice, pluralize } from '../utils/format'
@@ -118,7 +119,7 @@ function ProductDetails() {
 
           <div className="product-summary-rating">
             <StarRating value={product.rating} size="lg" />
-            <span>{pluralize(product.reviewCount, 'review')}</span>
+            <a href="#reviews">{pluralize(product.reviewCount, 'review')}</a>
           </div>
 
           <div className="product-summary-price">
@@ -197,16 +198,7 @@ function ProductDetails() {
         </dl>
       </section>
 
-      <section className="product-section" aria-labelledby="reviews-heading">
-        <h2 id="reviews-heading">Customer reviews</h2>
-        {/* Products from the API no longer embed their reviews, so the totals they carry
-            stand in for the list here. */}
-        <p className="product-reviews-empty">
-          {product.reviewCount
-            ? `Rated ${product.rating.toFixed(1)} out of 5 from ${pluralize(product.reviewCount, 'review')}.`
-            : 'This product has no reviews yet.'}
-        </p>
-      </section>
+      <ProductReviews product={product} />
 
       <RecommendationRow
         title="Similar products"

@@ -106,6 +106,15 @@
   color: var(--color-muted);
 }
 
+.product-summary-rating a {
+  color: var(--color-primary);
+  font-weight: 500;
+}
+
+.product-summary-rating a:hover {
+  text-decoration: underline;
+}
+
 .product-summary-price {
   display: flex;
   align-items: center;
@@ -192,41 +201,6 @@
 .product-spec-row dt {
   color: var(--color-muted);
   font-weight: 500;
-}
-
-.product-reviews {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: var(--space-3);
-}
-
-.product-review {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-.product-review-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-2);
-}
-
-.product-review-name {
-  font-weight: 600;
-  font-size: 0.92rem;
-}
-
-.product-review-date,
-.product-reviews-empty {
-  font-size: 0.8rem;
-  color: var(--color-muted);
-}
-
-.product-review-comment {
-  font-size: 0.9rem;
 }
 
 .product-loading {
