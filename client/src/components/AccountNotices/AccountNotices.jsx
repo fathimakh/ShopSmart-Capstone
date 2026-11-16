@@ -1,15 +1,17 @@
 import { Link, useLocation } from 'react-router-dom'
 import { FiAlertTriangle, FiClock, FiX } from 'react-icons/fi'
 import { useAuth } from '../../context/AuthContext'
+import { useShop } from '../../context/ShopContext'
 import './AccountNotices.css'
 
 /**
  * Notes about the account that can appear on any page: a session that ended without the
- * shopper asking, and a session that could not be checked.
+ * shopper asking, a session that could not be checked, and lists that failed to save.
  * The live region is always rendered so screen readers announce notes as they arrive.
  */
 function AccountNotices() {
   const { status, sessionNotice, clearSessionNotice, retrySession } = useAuth()
+  const { listsStatus, listsError, retryListsSync } = useShop()
   const location = useLocation()
 
   // The sign in page shows the session note inside its own form.
@@ -45,6 +47,22 @@ function AccountNotices() {
           </p>
           <div className="account-notice-actions">
             <button type="button" className="btn btn-outline" onClick={retrySession}>
+              Try again
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {listsStatus === 'error' ? (
+        <div className="account-notice">
+          <FiAlertTriangle aria-hidden="true" />
+          <p>
+            <strong>Your cart and wishlist are not saved to your account yet. </strong>
+            {listsError ? `${listsError.message} ` : ''}
+            Changes stay on this device until it works.
+          </p>
+          <div className="account-notice-actions">
+            <button type="button" className="btn btn-outline" onClick={retryListsSync}>
               Try again
             </button>
           </div>

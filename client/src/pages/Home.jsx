@@ -29,7 +29,7 @@ import './Home.css'
 
 function Home() {
   const { products, status, isSlow, categories, brands } = useCatalog()
-  const { recentlyViewed, wishlist, cart } = useShop()
+  const { recentlyViewed, wishlist, cart, listsRevision } = useShop()
   const [filters, setFilters] = useState(defaultFilters)
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -79,13 +79,14 @@ function Home() {
     [products]
   )
 
-  // Recommendations are worked out once per visit. Recalculating them live would pull
-  // a product out of the row the moment it was added to the cart or saved, which reads
-  // as the card vanishing under the shopper's finger.
+  // Recommendations are worked out once per visit, and again when an account's saved
+  // lists arrive after sign in. Recalculating them on every change would pull a product
+  // out of the row the moment it was added to the cart or saved, which reads as the card
+  // vanishing under the shopper's finger.
   useEffect(() => {
     if (status !== 'ready') return
     setInterests({ viewed: recentlyViewed, wishlist, cart: cart.map((item) => item.id) })
-  }, [status])
+  }, [status, listsRevision])
 
   const recommendations = useMemo(
     () => (interests ? getRecommendations(products, textIndex, interests) : []),

@@ -17,7 +17,8 @@ import './ProductDetails.css'
 function ProductDetails() {
   const { id } = useParams()
   const { products, status } = useCatalog()
-  const { addToCart, isInCart, isWishlisted, toggleWishlist, recordView } = useShop()
+  const { addToCart, isInCart, isWishlisted, toggleWishlist, recordView, maxQuantity } =
+    useShop()
   const [activeImage, setActiveImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
@@ -133,7 +134,11 @@ function ProductDetails() {
           <p className="product-summary-description">{product.description}</p>
 
           <div className="product-actions">
-            <QuantityStepper value={quantity} max={product.stock} onChange={setQuantity} />
+            <QuantityStepper
+              value={quantity}
+              max={Math.min(product.stock, maxQuantity)}
+              onChange={setQuantity}
+            />
             <button
               type="button"
               className="btn btn-primary product-actions-cart"

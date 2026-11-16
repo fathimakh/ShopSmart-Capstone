@@ -12,8 +12,16 @@ const FREE_DELIVERY_THRESHOLD = 150
 
 function Cart() {
   usePageTitle('Shopping cart')
-  const { cartItems, cartCount, subtotal, savings, updateQuantity, removeFromCart, clearCart } =
-    useShop()
+  const {
+    cartItems,
+    cartCount,
+    subtotal,
+    savings,
+    maxQuantity,
+    updateQuantity,
+    removeFromCart,
+    clearCart
+  } = useShop()
   const navigate = useNavigate()
 
   if (!cartItems.length) {
@@ -63,7 +71,7 @@ function Cart() {
               <div className="cart-item-actions">
                 <QuantityStepper
                   value={item.quantity}
-                  max={item.stock}
+                  max={Math.min(item.stock, maxQuantity)}
                   onChange={(quantity) => updateQuantity(item.id, quantity)}
                 />
                 <p className="cart-item-total">{formatPrice(item.price * item.quantity)}</p>
