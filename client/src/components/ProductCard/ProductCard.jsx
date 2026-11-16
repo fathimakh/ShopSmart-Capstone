@@ -12,6 +12,8 @@ function ProductCard({ product }) {
   const inCart = isInCart(product.id)
   const wishlisted = isWishlisted(product.id)
   const compared = isCompared(product.id)
+  // Checkout would refuse it, so a sold out product is not offered for the cart at all.
+  const soldOut = product.stock < 1
 
   return (
     <article className="product-card card">
@@ -41,7 +43,8 @@ function ProductCard({ product }) {
         </h3>
         <div className="product-card-signals">
           <StarRating value={product.rating} size="sm" />
-          {product.stock <= 10 ? (
+          {soldOut ? <span className="product-card-stock">Sold out</span> : null}
+          {!soldOut && product.stock <= 10 ? (
             <span className="product-card-stock">Only {product.stock} left</span>
           ) : null}
         </div>
@@ -54,13 +57,20 @@ function ProductCard({ product }) {
             ) : null}
           </p>
 
+          {soldOut && !inCart ? (
+            <button type="button" className="btn btn-outline product-card-cart" disabled>
+              Sold out
+              <span className="visually-hidden"> - {product.title}</span>
+            </button>
+          ) : null}
           {inCart ? (
             <Link className="btn btn-outline product-card-cart" to="/cart">
               <FiCheck aria-hidden="true" />
               Go to cart
               <span className="visually-hidden"> - {product.title} is in your cart</span>
             </Link>
-          ) : (
+          ) : null}
+          {!inCart && !soldOut ? (
             <button
               type="button"
               className="btn btn-primary product-card-cart"
@@ -70,7 +80,7 @@ function ProductCard({ product }) {
               Add to cart
               <span className="visually-hidden"> - {product.title}</span>
             </button>
-          )}
+          ) : null}
 
           <label className={compared ? 'product-card-compare is-active' : 'product-card-compare'}>
             <input

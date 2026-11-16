@@ -81,6 +81,8 @@ function ProductDetails() {
     )
   }
 
+  const soldOut = product.stock < 1
+
   return (
     <div className="container product-details">
       <nav className="breadcrumb" aria-label="Breadcrumb">
@@ -135,18 +137,21 @@ function ProductDetails() {
           <p className="product-summary-description">{product.description}</p>
 
           <div className="product-actions">
-            <QuantityStepper
-              value={quantity}
-              max={Math.min(product.stock, maxQuantity)}
-              onChange={setQuantity}
-            />
+            {soldOut ? null : (
+              <QuantityStepper
+                value={quantity}
+                max={Math.min(product.stock, maxQuantity)}
+                onChange={setQuantity}
+              />
+            )}
             <button
               type="button"
               className="btn btn-primary product-actions-cart"
               onClick={() => addToCart(product.id, quantity)}
+              disabled={soldOut}
             >
               <FiShoppingCart aria-hidden="true" />
-              {isInCart(product.id) ? 'Add more' : 'Add to cart'}
+              {soldOut ? 'Sold out' : isInCart(product.id) ? 'Add more' : 'Add to cart'}
             </button>
             {isInCart(product.id) ? (
               <Link className="btn btn-outline product-actions-cart" to="/cart">
@@ -175,7 +180,7 @@ function ProductDetails() {
             <li>
               <FiPackage aria-hidden="true" />
               <span>
-                {product.availability} - {product.stock} left in stock
+                {soldOut ? 'Out of stock for now' : `${product.availability} - ${product.stock} left in stock`}
               </span>
             </li>
             <li>
