@@ -7,6 +7,7 @@ import { isDBConnected } from './config/db.js'
 import { errorHandler, notFound } from './middleware/errorHandler.js'
 import sanitizeBody from './middleware/sanitize.js'
 import ApiError from './utils/ApiError.js'
+import authRoutes from './routes/authRoutes.js'
 
 // During development the client may run on any localhost port (Vite moves to the next
 // free one when 3000 is taken), so every local origin is allowed there.
@@ -60,6 +61,8 @@ app.get('/api/health', (req, res) => {
     uptime: Math.round(process.uptime())
   })
 })
+
+app.use('/api/auth', authRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
