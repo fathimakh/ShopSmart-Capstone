@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { FiShoppingCart, FiTrash2 } from 'react-icons/fi'
 import { useShop } from '../context/ShopContext'
+import { useAuth } from '../context/AuthContext'
 import QuantityStepper from '../components/QuantityStepper/QuantityStepper'
 import EmptyState from '../components/EmptyState/EmptyState'
 import { formatPrice, pluralize } from '../utils/format'
@@ -22,6 +23,7 @@ function Cart() {
     removeFromCart,
     clearCart
   } = useShop()
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   if (!cartItems.length) {
@@ -31,7 +33,11 @@ function Cart() {
           icon={FiShoppingCart}
           title="Your cart is empty"
           headingLevel={1}
-          message="Products you add will stay here, even if you close the browser."
+          message={
+            user
+              ? 'Products you add are saved to your account, so they wait for you on every device.'
+              : 'Products you add stay on this device. Sign in and they follow you everywhere.'
+          }
           action={
             <Link className="btn btn-primary" to="/">
               Start shopping

@@ -8,8 +8,9 @@ function Footer() {
           Shop<strong>Smart</strong>
         </p>
         <p className="footer-note">
-          A React mini project exploring smarter product discovery. Product data from the
-          public DummyJSON catalogue.
+          A MERN capstone project exploring smarter product discovery. The catalogue is
+          served by the ShopSmart API and was first seeded from the public DummyJSON
+          product data.
         </p>
         <p className="footer-credit">Built by Fathima K H</p>
       </div>

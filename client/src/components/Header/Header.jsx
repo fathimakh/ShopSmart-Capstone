@@ -67,7 +67,11 @@ function Header() {
         <FiTruck aria-hidden="true" />
         Free delivery over $150
         <span className="header-strip-divider" aria-hidden="true" />
-        <span className="header-strip-note">Demo store, no real payments are taken</span>
+        <span className="header-strip-note">
+          {user
+            ? 'Your cart and wishlist are saved to your account'
+            : 'Sign in to keep your cart on every device'}
+        </span>
       </p>
 
       <div className="container header-inner">

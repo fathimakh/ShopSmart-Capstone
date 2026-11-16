@@ -5,8 +5,8 @@ import './Hero.css'
 
 const promises = [
   { icon: FiTruck, title: 'Free delivery', text: 'On orders over $150' },
-  { icon: FiRefreshCw, title: 'Easy returns', text: 'Straight from the order page' },
-  { icon: FiShield, title: 'Secure checkout', text: 'Demo only, no card is charged' }
+  { icon: FiRefreshCw, title: 'Easy cancelling', text: 'From the order page until it ships' },
+  { icon: FiShield, title: 'Secure checkout', text: 'Card numbers are never stored' }
 ]
 
 function Hero({ featured, catalogueSize, categoryCount, brandCount }) {
