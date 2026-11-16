@@ -9,8 +9,6 @@
 }
 
 .admin-sidebar {
-  position: sticky;
-  top: calc(var(--header-height) + var(--space-3));
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -169,7 +167,7 @@
 
 .admin-filters {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(160px, 1fr));
   gap: var(--space-2) var(--space-3);
   align-items: end;
   padding: var(--space-3);
@@ -221,7 +219,10 @@
   gap: var(--space-3);
 }
 
+/* position: relative makes the wrapper the containing block of the visually hidden
+   labels inside the rows, so they scroll with the table instead of widening the page. */
 .admin-table-wrap {
+  position: relative;
   overflow-x: auto;
   transition: opacity 0.18s ease;
 }
@@ -345,52 +346,20 @@
   margin-bottom: var(--space-3);
 }
 
-/* Compact navigation once the side column no longer fits. */
-@media (max-width: 900px) {
-  .admin-app {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .admin-sidebar {
-    position: static;
-    padding: var(--space-2);
-    gap: var(--space-2);
-  }
-
-  .admin-sidebar-head,
-  .admin-sidebar-shop {
-    display: none;
-  }
-
-  .admin-nav ul {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--space-1);
-  }
-
-  .admin-nav-link {
-    flex-direction: column;
-    gap: 2px;
-    padding: var(--space-2) 2px;
-    font-size: 0.78rem;
-    text-align: center;
-  }
-}
-
-@media (max-width: 760px) {
-  .admin-panel {
-    padding: var(--space-3);
-  }
-
-  /* The search keeps a whole row; the drop-downs share rows, two at a time. */
+/* With the menu beside it the filter bar is narrow, so the search takes its own row. */
+@media (max-width: 1100px) {
   .admin-filters {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 
   .admin-filters .admin-search {
     grid-column: 1 / -1;
   }
+}
 
+/* Up to 1000px the list column is too narrow for a full table row (the menu still sits
+   beside it from 901px), so each row becomes a card. */
+@media (max-width: 1000px) {
   /* Each cell names its own column (data-label), and a clipped header would still hold
      the focusable sort button, so the header row goes. The sort drop-down stays. */
   .admin-table thead {
@@ -441,6 +410,66 @@
 
   .admin-table .is-actions {
     justify-content: flex-end;
+  }
+}
+
+/* Where a card is wide, its cells share two columns so it stays short. */
+@media (min-width: 761px) and (max-width: 1000px) {
+  .admin-table tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-5);
+  }
+
+  .admin-table td.is-primary,
+  .admin-table td.is-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Compact navigation once the side column no longer fits. */
+@media (max-width: 900px) {
+  .admin-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-sidebar {
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .admin-sidebar-head,
+  .admin-sidebar-shop {
+    display: none;
+  }
+
+  .admin-nav ul {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-1);
+  }
+
+  .admin-nav-link {
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2) 2px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-panel {
+    padding: var(--space-3);
+  }
+
+  /* The search keeps a whole row; the drop-downs share rows, two at a time. */
+  .admin-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-filters .admin-search {
+    grid-column: 1 / -1;
   }
 }
 

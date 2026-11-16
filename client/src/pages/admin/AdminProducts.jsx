@@ -300,10 +300,10 @@ function AdminProducts() {
                     <th scope="col" className="is-number">
                       Stock
                     </th>
-                    <th scope="col" className="is-number">
+                    <th scope="col" className="is-number is-optional">
                       Sold
                     </th>
-                    <th scope="col" className="is-number">
+                    <th scope="col" className="is-number is-optional">
                       Rating
                     </th>
                     <th scope="col" className="is-actions">
@@ -351,10 +351,10 @@ function AdminProducts() {
                             {tone ? <span className={tone.className}>{tone.label}</span> : null}
                           </span>
                         </td>
-                        <td data-label="Sold" className="is-number">
+                        <td data-label="Sold" className="is-number is-optional">
                           {product.soldCount}
                         </td>
-                        <td data-label="Rating" className="is-number">
+                        <td data-label="Rating" className="is-number is-optional">
                           <span>
                             {product.rating.toFixed(1)}
                             <span className="admin-cell-sub">

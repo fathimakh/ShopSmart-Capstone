@@ -164,7 +164,7 @@ function AdminOrders() {
                   <tr>
                     <th scope="col">Order</th>
                     <th scope="col">Customer</th>
-                    <th scope="col" className="is-number">
+                    <th scope="col" className="is-number is-optional">
                       Items
                     </th>
                     <th scope="col" className="is-number">
@@ -196,7 +196,7 @@ function AdminOrders() {
                           </span>
                         </span>
                       </td>
-                      <td data-label="Items" className="is-number">
+                      <td data-label="Items" className="is-number is-optional">
                         {orderItemCount(order)}
                       </td>
                       <td data-label="Total" className="is-number">

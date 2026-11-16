@@ -1,5 +1,5 @@
 .admin-order-customer {
-  max-width: 240px;
+  max-width: 190px;
 }
 
 .admin-order-open {
@@ -7,7 +7,14 @@
   font-size: 0.82rem;
 }
 
-@media (max-width: 760px) {
+/* Just above the card layout the row is tight; the item count is on the order page. */
+@media (min-width: 1001px) and (max-width: 1099px) {
+  .admin-orders .admin-table .is-optional {
+    display: none;
+  }
+}
+
+@media (max-width: 1000px) {
   .admin-order-customer {
     max-width: none;
     align-items: flex-end;

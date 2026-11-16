@@ -49,10 +49,22 @@
 }
 
 .admin-products .admin-table .is-primary {
-  min-width: 260px;
+  min-width: 230px;
 }
 
-@media (max-width: 760px) {
+/* Between the phone cards and a wide screen the table is tight, so the figures the edit
+   page also shows (units sold and rating) give way to the ones admins act on. */
+@media (min-width: 1001px) and (max-width: 1279px) {
+  .admin-products .admin-table .is-optional {
+    display: none;
+  }
+
+  .admin-products .admin-table .is-primary {
+    min-width: 200px;
+  }
+}
+
+@media (max-width: 1000px) {
   .admin-products .admin-table .is-primary {
     min-width: 0;
   }
