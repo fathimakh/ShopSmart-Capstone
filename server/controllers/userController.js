@@ -5,7 +5,7 @@ import { buildPagination, createQueryReader, escapeRegex } from '../utils/queryR
 
 async function findUserOr404(id) {
   const user = await User.findById(id)
-  if (!user) throw ApiError.notFound('We could not find that account.', 'USER_NOT_FOUND')
+  if (!user) throw ApiError.notFound('We could not find that account.', 'ACCOUNT_NOT_FOUND')
   return user
 }
 

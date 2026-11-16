@@ -161,7 +161,7 @@ describe('Account management', () => {
     assert.equal(invalid.body.errors[0].field, 'role')
     assert.equal((await api().patch('/api/users/123').set(bearer(token)).send({ role: 'admin' }).expect(400)).body.code, 'INVALID_ID')
     const missing = await api().delete('/api/users/0123456789abcdef01234567').set(bearer(token)).expect(404)
-    assert.equal(missing.body.code, 'USER_NOT_FOUND')
+    assert.equal(missing.body.code, 'ACCOUNT_NOT_FOUND')
   })
 
   it('deletes an account, ends its sessions and keeps its orders', async () => {
