@@ -1,30 +1,52 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { fetchProducts, getFallbackProducts } from '../services/api'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { fetchProducts } from '../services/api'
+import { isAbortError } from '../services/http'
 
 const CatalogContext = createContext(null)
+
+// After this long the shopper is told the server may be waking up.
+const SLOW_AFTER_MS = 5000
 
 export function CatalogProvider({ children }) {
   const [products, setProducts] = useState([])
   const [status, setStatus] = useState('loading')
-  const [usingOfflineData, setUsingOfflineData] = useState(false)
+  const [error, setError] = useState(null)
+  const [isSlow, setIsSlow] = useState(false)
+  const request = useRef(null)
 
   const loadCatalogue = useCallback(async () => {
+    // A retry replaces any request still running, and StrictMode's second mount aborts the first.
+    if (request.current) request.current.abort()
+    const controller = new AbortController()
+    request.current = controller
+
     setStatus('loading')
+    setError(null)
+    setIsSlow(false)
+    const slowTimer = setTimeout(() => setIsSlow(true), SLOW_AFTER_MS)
+
     try {
-      const data = await fetchProducts()
+      const data = await fetchProducts({ signal: controller.signal })
       setProducts(data)
-      setUsingOfflineData(false)
       setStatus('ready')
-    } catch (error) {
-      // Keep the store usable when the API is unreachable rather than showing a dead page.
-      setProducts(await getFallbackProducts())
-      setUsingOfflineData(true)
-      setStatus('ready')
+    } catch (loadError) {
+      if (isAbortError(loadError)) return
+      setError(loadError)
+      setStatus('error')
+    } finally {
+      clearTimeout(slowTimer)
+      if (request.current === controller) {
+        request.current = null
+        setIsSlow(false)
+      }
     }
   }, [])
 
   useEffect(() => {
     loadCatalogue()
+    return () => {
+      if (request.current) request.current.abort()
+    }
   }, [loadCatalogue])
 
   const value = useMemo(() => {
@@ -35,7 +57,8 @@ export function CatalogProvider({ children }) {
     return {
       products,
       status,
-      usingOfflineData,
+      error,
+      isSlow,
       categories,
       brands,
       priceRange: {
@@ -44,7 +67,7 @@ export function CatalogProvider({ children }) {
       },
       reload: loadCatalogue
     }
-  }, [products, status, usingOfflineData, loadCatalogue])
+  }, [products, status, error, isSlow, loadCatalogue])
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
 }

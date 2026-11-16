@@ -4,7 +4,9 @@ import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
 import CompareBar from './components/CompareBar/CompareBar'
 import BottomNav from './components/BottomNav/BottomNav'
+import CatalogueError from './components/CatalogueError/CatalogueError'
 import Home from './pages/Home'
+import { useCatalog } from './context/CatalogContext'
 import './App.css'
 
 // The shop page loads with the app; the rest arrive when the shopper navigates to them.
@@ -22,9 +24,20 @@ const NotFound = lazy(() => import('./pages/NotFound'))
 // Pages that end in a fixed composer read better without the footer below them.
 const pagesWithoutFooter = ['/assistant']
 
+// Pages that work without the product catalogue, so they stay usable when it fails to load.
+const pagesWithoutCatalogue = ['/orders']
+
+function needsCatalogue(pathname) {
+  return !pagesWithoutCatalogue.some(
+    (page) => pathname === page || pathname.startsWith(`${page}/`)
+  )
+}
+
 function App() {
   const { pathname } = useLocation()
+  const { status: catalogueStatus } = useCatalog()
   const showFooter = !pagesWithoutFooter.includes(pathname)
+  const catalogueFailed = catalogueStatus === 'error' && needsCatalogue(pathname)
 
   return (
     <div className="app">
@@ -33,21 +46,25 @@ function App() {
       </a>
       <Header />
       <main id="main-content" className="app-main">
-        <Suspense fallback={<p className="app-loading">Loading page</p>}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
-            <Route path="/category/:slug" element={<CategoryPage />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/compare" element={<Compare />} />
-            <Route path="/assistant" element={<Assistant />} />
-            <Route path="/checkout" element={<Checkout />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:number" element={<OrderDetails />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+        {catalogueFailed ? (
+          <CatalogueError />
+        ) : (
+          <Suspense fallback={<p className="app-loading">Loading page</p>}>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/product/:id" element={<ProductDetails />} />
+              <Route path="/category/:slug" element={<CategoryPage />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/wishlist" element={<Wishlist />} />
+              <Route path="/compare" element={<Compare />} />
+              <Route path="/assistant" element={<Assistant />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders/:number" element={<OrderDetails />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        )}
       </main>
       <CompareBar />
       {showFooter ? <Footer /> : null}

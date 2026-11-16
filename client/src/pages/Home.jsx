@@ -28,7 +28,7 @@ import { pluralize } from '../utils/format'
 import './Home.css'
 
 function Home() {
-  const { products, status, usingOfflineData, categories, brands } = useCatalog()
+  const { products, status, isSlow, categories, brands } = useCatalog()
   const { recentlyViewed, wishlist, cart } = useShop()
   const [filters, setFilters] = useState(defaultFilters)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -126,9 +126,9 @@ function Home() {
         />
       ) : null}
 
-      {usingOfflineData ? (
+      {isSlow ? (
         <p className="home-notice" role="status">
-          Live catalogue is unavailable right now, so a saved offline copy is being shown.
+          Waking up the server. The first visit after a quiet spell can take up to a minute.
         </p>
       ) : null}
 

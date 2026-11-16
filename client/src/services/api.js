@@ -1,18 +1,24 @@
 import { titleCase } from '../utils/format'
+import { api } from './http'
 
-const API_URL = 'https://dummyjson.com/products?limit=0'
-const REQUEST_TIMEOUT = 10000
+// The first request of a visit can wake a sleeping free-tier server, which takes up to a
+// minute, so the catalogue waits longer than an ordinary request before giving up.
+const CATALOGUE_TIMEOUT = 60000
 
 // The API returns the already discounted price, so the pre-discount figure has to be
-// rebuilt to show a struck-through original price on the card.
+// rebuilt to show a struck-through original price on the card. The server uses the same
+// rule for order lines (docs/API.md, Product).
 function originalPrice(price, discountPercentage) {
   if (!discountPercentage) return price
   return Math.round((price / (1 - discountPercentage / 100)) * 100) / 100
 }
 
-function normalizeProduct(raw) {
-  const reviews = raw.reviews || []
-
+/**
+ * Shapes a product from GET /api/products for the components. Reviews are not embedded
+ * in the product any more; reviewCount comes from the server and the reviews themselves
+ * from the reviews endpoint.
+ */
+export function normalizeProduct(raw) {
   return {
     id: raw.id,
     title: raw.title,
@@ -23,9 +29,9 @@ function normalizeProduct(raw) {
     price: raw.price,
     originalPrice: originalPrice(raw.price, raw.discountPercentage),
     discount: Math.round(raw.discountPercentage || 0),
-    rating: raw.rating,
-    reviews,
-    reviewCount: reviews.length,
+    rating: raw.rating || 0,
+    reviewCount: raw.reviewCount || 0,
+    soldCount: raw.soldCount || 0,
     stock: raw.stock,
     availability: raw.availabilityStatus,
     tags: raw.tags || [],
@@ -33,38 +39,21 @@ function normalizeProduct(raw) {
     images: raw.images && raw.images.length ? raw.images : [raw.thumbnail],
     createdAt: raw.meta ? raw.meta.createdAt : null,
     specs: {
-      SKU: raw.sku,
-      Weight: `${raw.weight} g`,
+      SKU: raw.sku || 'Not specified',
+      Weight: raw.weight ? `${raw.weight} g` : 'Not specified',
       Dimensions: raw.dimensions
         ? `${raw.dimensions.width} x ${raw.dimensions.height} x ${raw.dimensions.depth} cm`
         : 'Not specified',
-      Warranty: raw.warrantyInformation,
-      Shipping: raw.shippingInformation,
-      Returns: raw.returnPolicy,
-      'Minimum order': `${raw.minimumOrderQuantity} unit(s)`
+      Warranty: raw.warrantyInformation || 'Not specified',
+      Shipping: raw.shippingInformation || 'Not specified',
+      Returns: raw.returnPolicy || 'Not specified',
+      'Minimum order': `${raw.minimumOrderQuantity || 1} unit(s)`
     }
   }
 }
 
-export async function fetchProducts() {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT)
-
-  try {
-    const response = await fetch(API_URL, { signal: controller.signal })
-    if (!response.ok) {
-      throw new Error(`Catalogue request failed with status ${response.status}`)
-    }
-    const data = await response.json()
-    return data.products.map(normalizeProduct)
-  } finally {
-    clearTimeout(timeout)
-  }
-}
-
-// Imported only when the request fails, so the offline snapshot stays out of the
-// bundle every visitor downloads.
-export async function getFallbackProducts() {
-  const { default: fallbackProducts } = await import('./fallbackProducts')
-  return fallbackProducts.map(normalizeProduct)
+/** The whole catalogue in one request, the way the storefront filters it on the device. */
+export async function fetchProducts({ signal } = {}) {
+  const data = await api.get('/products?limit=0', { signal, timeout: CATALOGUE_TIMEOUT })
+  return data.products.map(normalizeProduct)
 }

@@ -10,7 +10,7 @@ import PricePrediction from '../components/PricePrediction/PricePrediction'
 import EmptyState from '../components/EmptyState/EmptyState'
 import { buildTextIndex } from '../utils/textIndex'
 import { getSimilarProducts } from '../utils/recommend'
-import { formatDate, formatPrice, pluralize } from '../utils/format'
+import { formatPrice, pluralize } from '../utils/format'
 import usePageTitle from '../hooks/usePageTitle'
 import './ProductDetails.css'
 
@@ -194,24 +194,13 @@ function ProductDetails() {
 
       <section className="product-section" aria-labelledby="reviews-heading">
         <h2 id="reviews-heading">Customer reviews</h2>
-        {product.reviews.length ? (
-          <ul className="product-reviews">
-            {product.reviews.map((review, index) => (
-              <li key={`${review.reviewerEmail}-${index}`} className="product-review card">
-                <div className="product-review-head">
-                  <div>
-                    <p className="product-review-name">{review.reviewerName}</p>
-                    <p className="product-review-date">{formatDate(review.date)}</p>
-                  </div>
-                  <StarRating value={review.rating} size="sm" showValue={false} />
-                </div>
-                <p className="product-review-comment">{review.comment}</p>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="product-reviews-empty">This product has no reviews yet.</p>
-        )}
+        {/* Products from the API no longer embed their reviews, so the totals they carry
+            stand in for the list here. */}
+        <p className="product-reviews-empty">
+          {product.reviewCount
+            ? `Rated ${product.rating.toFixed(1)} out of 5 from ${pluralize(product.reviewCount, 'review')}.`
+            : 'This product has no reviews yet.'}
+        </p>
       </section>
 
       <RecommendationRow
