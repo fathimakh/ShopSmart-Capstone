@@ -1,0 +1,54 @@
+.admin-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.admin-page-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-page-header h1 {
+  font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.admin-page-header p {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  max-width: 64ch;
+}
+
+.admin-page-header-eyebrow {
+  font-size: 0.85rem;
+}
+
+.admin-page-header-eyebrow a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.admin-page-header-eyebrow a:hover {
+  text-decoration: underline;
+}
+
+.admin-page-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+@media (max-width: 520px) {
+  .admin-page-header-actions,
+  .admin-page-header-actions .btn {
+    width: 100%;
+  }
+}

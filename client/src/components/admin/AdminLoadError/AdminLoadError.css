@@ -1,0 +1,60 @@
+.admin-load-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-5) var(--space-3);
+  text-align: center;
+}
+
+.admin-load-error h2 {
+  font-size: 1.15rem;
+}
+
+.admin-load-error p {
+  max-width: 52ch;
+  color: var(--color-muted);
+}
+
+.admin-load-error .btn {
+  margin-top: var(--space-1);
+}
+
+.admin-load-error-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #fef2f2;
+  color: var(--color-danger);
+  font-size: 1.3rem;
+}
+
+.admin-load-error.is-compact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #f5c2c2;
+  border-radius: var(--radius-md);
+  background-color: #fef2f2;
+  color: #991b1b;
+  text-align: left;
+  font-size: 0.875rem;
+}
+
+.admin-load-error.is-compact > svg {
+  flex-shrink: 0;
+}
+
+.admin-load-error.is-compact p {
+  flex: 1 1 240px;
+  max-width: none;
+  color: inherit;
+}
+
+.admin-load-error.is-compact .btn {
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}

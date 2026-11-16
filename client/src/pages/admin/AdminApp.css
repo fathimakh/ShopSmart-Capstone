@@ -1,30 +1,451 @@
+/* The admin shell, plus the panels, filters and tables every admin page shares. They live
+   here because each admin page is rendered inside this shell. */
+
 .admin-app {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.admin-sidebar {
+  position: sticky;
+  top: calc(var(--header-height) + var(--space-3));
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  padding: var(--space-3);
 }
 
-.admin-app-header {
+.admin-sidebar-head {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border);
 }
 
-.admin-app-header p {
-  color: var(--color-muted);
-  font-size: 0.9rem;
-  overflow-wrap: anywhere;
-}
-
-.admin-app-icon {
+.admin-sidebar-icon {
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radius-md);
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary);
+  color: #fff;
+}
+
+.admin-sidebar-who {
+  min-width: 0;
+}
+
+.admin-sidebar-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.admin-sidebar-user {
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.admin-nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 10px var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-weight: 500;
+  font-size: 0.92rem;
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+.admin-nav-link svg {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+.admin-nav-link:hover {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.admin-nav-link.is-active {
   background-color: var(--color-primary-soft);
   color: var(--color-primary);
-  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.admin-sidebar-shop {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-2);
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.admin-sidebar-shop:hover {
+  color: var(--color-primary);
+}
+
+.admin-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+/* Panels: the cards most admin pages are built from. */
+
+.admin-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  min-width: 0;
+}
+
+.admin-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.admin-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 1.1rem;
+}
+
+.admin-panel h2 svg {
+  color: var(--color-primary);
+}
+
+.admin-panel-link {
+  color: var(--color-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.admin-panel-link:hover {
+  text-decoration: underline;
+}
+
+.admin-muted {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.admin-text-link {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.admin-text-link:hover {
+  text-decoration: underline;
+}
+
+.admin-list-count {
+  font-size: 1rem;
+}
+
+/* Filters above a list. */
+
+.admin-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2) var(--space-3);
+  align-items: end;
+  padding: var(--space-3);
+}
+
+.admin-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.admin-filter label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.admin-filter input,
+.admin-filter select,
+.admin-select {
+  width: 100%;
+  height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 10px var(--space-3);
+  background-color: var(--color-surface);
+  font-size: 0.92rem;
+}
+
+.admin-filter input:focus,
+.admin-filter select:focus,
+.admin-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.admin-filters-reset {
+  justify-self: start;
+  padding-inline: var(--space-2);
+}
+
+/* Tables: rows on wide screens, a card per row on phones. */
+
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  transition: opacity 0.18s ease;
+}
+
+.admin-table-wrap[aria-busy='true'] {
+  opacity: 0.55;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table thead th {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.admin-table tbody tr:hover {
+  background-color: #fafbfe;
+}
+
+.admin-table .is-number {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-table .is-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.admin-row-actions {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.admin-row-actions .btn {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+.admin-danger-button {
+  color: var(--color-danger);
+}
+
+.admin-danger-button:hover:not(:disabled) {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.admin-cell-main {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.admin-cell-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.admin-cell-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.admin-cell-sub {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.admin-thumb {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background-color: #f2f3f8;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.admin-skeleton-row {
+  height: 52px;
+  margin-bottom: var(--space-2);
+}
+
+.admin-empty {
+  padding: var(--space-5) var(--space-3);
+  text-align: center;
+}
+
+.admin-empty h2 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-1);
+}
+
+.admin-empty p {
+  color: var(--color-muted);
+  margin-bottom: var(--space-3);
+}
+
+/* Compact navigation once the side column no longer fits. */
+@media (max-width: 900px) {
+  .admin-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-sidebar {
+    position: static;
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  .admin-sidebar-head,
+  .admin-sidebar-shop {
+    display: none;
+  }
+
+  .admin-nav ul {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-1);
+  }
+
+  .admin-nav-link {
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2) 2px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+}
+
+@media (max-width: 760px) {
+  .admin-panel {
+    padding: var(--space-3);
+  }
+
+  /* The search keeps a whole row; the drop-downs share rows, two at a time. */
+  .admin-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-filters .admin-search {
+    grid-column: 1 / -1;
+  }
+
+  /* Each cell names its own column (data-label), and a clipped header would still hold
+     the focusable sort button, so the header row goes. The sort drop-down stays. */
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table,
+  .admin-table tbody,
+  .admin-table tr,
+  .admin-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-table tr {
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .admin-table tbody tr:last-child {
+    border-bottom: 0;
+  }
+
+  .admin-table td {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 4px var(--space-2);
+    border-bottom: 0;
+    text-align: right;
+  }
+
+  .admin-table td[data-label]::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    color: var(--color-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .admin-table td.is-primary {
+    justify-content: flex-start;
+    padding-block: var(--space-1) var(--space-2);
+    text-align: left;
+  }
+
+  .admin-table .is-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-nav-link {
+    font-size: 0.72rem;
+  }
 }
