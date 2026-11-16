@@ -1,3 +1,4 @@
+import env from '../config/env.js'
 import Order, { ORDER_STATUSES } from '../models/order.js'
 import Product, { LOW_STOCK_LIMIT } from '../models/product.js'
 import User from '../models/user.js'
@@ -10,9 +11,15 @@ function roundCurrency(value) {
   return Math.round(value * 100) / 100
 }
 
-// Days are counted in UTC, the same calendar the dates in the API responses use.
+// Days follow the store's own calendar (STORE_TIMEZONE), so "today" on the dashboard
+// starts at the store's midnight rather than at midnight UTC. en-CA writes YYYY-MM-DD.
 function dayKey(time) {
-  return new Date(time).toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: env.storeTimezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).format(time)
 }
 
 /**
@@ -34,7 +41,9 @@ function fillSalesDays(rows, today) {
  */
 export async function getSummary(req, res) {
   const now = Date.now()
-  const firstDay = new Date(`${dayKey(now - (SALES_DAYS - 1) * DAY)}T00:00:00.000Z`)
+  // One extra day covers the part of the oldest day that falls before this time of day;
+  // anything outside the fourteen calendar days is dropped by fillSalesDays.
+  const since = new Date(now - (SALES_DAYS + 1) * DAY)
   const kept = { status: { $ne: 'cancelled' } }
 
   const [users, products, orders, [revenue], statusCounts, lowStock, bestSellers, recentOrders, dailySales] =
@@ -48,10 +57,10 @@ export async function getSummary(req, res) {
       Product.find({ soldCount: { $gt: 0 } }).sort({ soldCount: -1, id: 1 }).limit(DASHBOARD_LIST_SIZE),
       Order.find().sort({ createdAt: -1, _id: -1 }).limit(DASHBOARD_LIST_SIZE).populate('user', 'name email'),
       Order.aggregate([
-        { $match: { ...kept, createdAt: { $gte: firstDay } } },
+        { $match: { ...kept, createdAt: { $gte: since } } },
         {
           $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: env.storeTimezone } },
             orders: { $sum: 1 },
             revenue: { $sum: '$total' }
           }

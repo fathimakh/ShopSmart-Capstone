@@ -33,12 +33,20 @@ const env = {
   geminiApiKey: (process.env.GEMINI_API_KEY || '').trim(),
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   geminiTimeoutMs: toInt(process.env.GEMINI_TIMEOUT_MS, 9000),
+  storeTimezone: process.env.STORE_TIMEZONE || 'Asia/Kolkata',
   seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@shopsmart.dev',
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin@1234'
 }
 
 if (!env.jwtSecret) {
   throw new Error('JWT_SECRET is not set. Copy .env.example to .env and fill it in.')
+}
+
+// A misspelt zone would otherwise only fail later, on the first dashboard request.
+try {
+  new Intl.DateTimeFormat('en-CA', { timeZone: env.storeTimezone })
+} catch {
+  throw new Error(`STORE_TIMEZONE "${env.storeTimezone}" is not a time zone name such as Asia/Kolkata.`)
 }
 
 export default env

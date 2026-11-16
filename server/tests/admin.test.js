@@ -4,6 +4,7 @@ import {
   createAdmin,
   createProduct,
   createUser,
+  env,
   useTestDatabase,
   validDelivery
 } from './helpers/testApp.js'
@@ -84,6 +85,19 @@ describe('GET /api/admin/summary', () => {
     assert.deepEqual(summary.salesByDay.find((day) => day.date === threeDaysAgo), { date: threeDaysAgo, orders: 1, revenue: 400 })
     const counted = summary.salesByDay.reduce((total, day) => total + day.orders, 0)
     assert.equal(counted, 3, 'cancelled orders and orders older than two weeks are left out')
+  })
+
+  it('counts days in the store\'s time zone', async () => {
+    const { token: adminToken } = await createAdmin()
+    env.storeTimezone = 'Pacific/Kiritimati'
+    try {
+      const res = await api().get('/api/admin/summary').set(bearer(adminToken)).expect(200)
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Pacific/Kiritimati' }).format(new Date())
+      assert.equal(res.body.salesByDay.at(-1).date, today)
+      assert.equal(res.body.salesByDay.at(-1).orders, 2, 'the same two orders, on the store\'s calendar')
+    } finally {
+      env.storeTimezone = 'UTC'
+    }
   })
 
   it('is only for admins', async () => {
