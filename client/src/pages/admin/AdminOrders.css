@@ -1,0 +1,15 @@
+.admin-order-customer {
+  max-width: 240px;
+}
+
+.admin-order-open {
+  padding: 6px 10px;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 760px) {
+  .admin-order-customer {
+    max-width: none;
+    align-items: flex-end;
+  }
+}

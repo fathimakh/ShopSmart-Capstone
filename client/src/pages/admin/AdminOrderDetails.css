@@ -1,0 +1,144 @@
+.admin-order-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.admin-order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 340px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.admin-order-main {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-order-side {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.admin-order-main,
+.admin-order-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.admin-order-items {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-order-items li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-order-items .admin-cell-text {
+  flex: 1;
+}
+
+.admin-order-line-total {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-order-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: auto;
+  width: min(100%, 280px);
+  font-size: 0.9rem;
+}
+
+.admin-order-totals > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.admin-order-totals dt {
+  color: var(--color-muted);
+}
+
+.admin-order-totals dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-order-totals .is-total {
+  margin-top: 4px;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.admin-order-totals .is-total dt {
+  color: var(--color-text);
+}
+
+.admin-order-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.admin-order-history li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  font-size: 0.88rem;
+}
+
+.admin-order-history .order-status-badge {
+  flex-shrink: 0;
+  min-width: 104px;
+  justify-content: flex-start;
+}
+
+.admin-order-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.9rem;
+  font-style: normal;
+  overflow-wrap: anywhere;
+}
+
+.admin-order-block .admin-text-link {
+  margin-top: var(--space-1);
+  font-size: 0.85rem;
+}
+
+.admin-order-skeleton {
+  height: 360px;
+}
+
+@media (max-width: 1000px) {
+  .admin-order-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-order-main,
+  .admin-order-side {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-order-history li {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
