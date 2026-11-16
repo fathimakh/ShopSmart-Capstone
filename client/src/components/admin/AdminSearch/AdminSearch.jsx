@@ -16,8 +16,18 @@ function AdminSearch({ id, label, value, onSearch, placeholder, hint, maxLength 
   latestSearch.current = onSearch
   const latestValue = useRef(value)
   latestValue.current = value
+  // The last search this box asked for, so its own search coming back through the
+  // address does not overwrite letters typed since.
+  const sent = useRef(value)
+
+  const search = (words) => {
+    sent.current = words
+    latestSearch.current(words)
+  }
 
   useEffect(() => {
+    if (value === sent.current) return
+    sent.current = value
     setText(value)
   }, [value])
 
@@ -25,7 +35,7 @@ function AdminSearch({ id, label, value, onSearch, placeholder, hint, maxLength 
   // reset would bring the old words straight back.
   useEffect(() => {
     const words = debounced.trim()
-    if (words !== latestValue.current) latestSearch.current(words)
+    if (words !== latestValue.current) search(words)
   }, [debounced])
 
   return (
@@ -46,7 +56,7 @@ function AdminSearch({ id, label, value, onSearch, placeholder, hint, maxLength 
             if (event.key !== 'Enter') return
             event.preventDefault()
             const words = text.trim()
-            if (words !== value) onSearch(words)
+            if (words !== value) search(words)
           }}
         />
       </div>
