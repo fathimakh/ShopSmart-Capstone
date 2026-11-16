@@ -61,7 +61,9 @@ export function errorHandler(error, req, res, next) {
   if (apiError?.errors?.length) body.errors = apiError.errors
   if (apiError?.details) body.details = apiError.details
 
-  if (status >= 500) {
+  // A deliberate ApiError, such as 503 AI_UNAVAILABLE when no Gemini key is set, is an
+  // answer rather than a fault. Anything unrecognised is a bug and is logged in full.
+  if (!apiError) {
     console.error(`[${req.method} ${req.originalUrl}]`, error)
     if (env.nodeEnv === 'development') body.stack = error?.stack
   }
