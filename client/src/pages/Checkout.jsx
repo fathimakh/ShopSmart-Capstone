@@ -608,7 +608,7 @@ function Checkout() {
                             className="btn btn-ghost"
                             onClick={() => removeFromCart(item.id)}
                           >
-                            Remove<span className="visually-hidden"> {item.title}</span> from cart
+                            Remove from cart<span className="visually-hidden">: {item.title}</span>
                           </button>
                         </div>
                       ) : null}
