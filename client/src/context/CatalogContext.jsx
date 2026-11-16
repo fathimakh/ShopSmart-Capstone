@@ -49,6 +49,22 @@ export function CatalogProvider({ children }) {
     }
   }, [loadCatalogue])
 
+  /**
+   * Applies a change the server has just confirmed (a new rating after a review, the
+   * stock left after an order) to the product already loaded, so every page shows it
+   * without reloading the whole catalogue. changes is an object or a function of the
+   * product that returns one.
+   */
+  const updateProduct = useCallback((productId, changes) => {
+    setProducts((current) =>
+      current.map((product) => {
+        if (product.id !== productId) return product
+        const next = typeof changes === 'function' ? changes(product) : changes
+        return { ...product, ...next }
+      })
+    )
+  }, [])
+
   const value = useMemo(() => {
     const categories = [...new Set(products.map((product) => product.category))].sort()
     const brands = [...new Set(products.map((product) => product.brand))].sort()
@@ -65,9 +81,10 @@ export function CatalogProvider({ children }) {
         min: prices.length ? Math.floor(Math.min(...prices)) : 0,
         max: prices.length ? Math.ceil(Math.max(...prices)) : 0
       },
-      reload: loadCatalogue
+      reload: loadCatalogue,
+      updateProduct
     }
-  }, [products, status, error, isSlow, loadCatalogue])
+  }, [products, status, error, isSlow, loadCatalogue, updateProduct])
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
 }

@@ -16,15 +16,22 @@ export function formatExpiry(value) {
   return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits
 }
 
+// Mirrors server/validators/orderValidators.js, so most mistakes show before a round trip.
 export function validateDelivery(values) {
   const errors = {}
 
-  if (!values.name.trim()) errors.name = 'Enter the name for this delivery'
+  const name = values.name.trim()
+  if (name.length < 2) errors.name = 'Enter the name for this delivery'
+  else if (name.length > 60) errors.name = 'Keep the name under 60 characters'
   if (!EMAIL_PATTERN.test(values.email.trim())) errors.email = 'Enter a valid email address'
   if (digitsOnly(values.phone).length !== 10) errors.phone = 'Enter a 10 digit phone number'
-  if (values.address.trim().length < 8) errors.address = 'Enter the full street address'
+  const street = values.address.trim()
+  if (street.length < 8) errors.address = 'Enter the full street address'
+  else if (street.length > 160) errors.address = 'Keep the address under 160 characters'
   if (!values.city.trim()) errors.city = 'Enter the city'
+  else if (values.city.trim().length > 60) errors.city = 'Keep the city under 60 characters'
   if (!values.state.trim()) errors.state = 'Enter the state'
+  else if (values.state.trim().length > 60) errors.state = 'Keep the state under 60 characters'
   if (digitsOnly(values.pincode).length !== 6) errors.pincode = 'Enter a 6 digit PIN code'
 
   return errors
@@ -49,10 +56,19 @@ export function validatePayment(values) {
   return errors
 }
 
-export function buildOrderNumber(placedAt) {
-  return `SS${placedAt.toString(36).toUpperCase().slice(-6)}`
-}
-
-export function estimatedDelivery(placedAt, days = 4) {
-  return new Date(placedAt + days * 24 * 60 * 60 * 1000).toISOString()
+/**
+ * The delivery form filled in from the account: the saved address (every order updates
+ * it on the server) and the account's own name and email where the address has none.
+ */
+export function deliveryFromAccount(user) {
+  const address = (user && user.address) || {}
+  return {
+    name: address.name || (user && user.name) || '',
+    email: (user && user.email) || '',
+    phone: address.phone || '',
+    address: address.address || '',
+    city: address.city || '',
+    state: address.state || '',
+    pincode: address.pincode || ''
+  }
 }

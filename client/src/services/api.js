@@ -13,6 +13,12 @@ function originalPrice(price, discountPercentage) {
   return Math.round((price / (1 - discountPercentage / 100)) * 100) / 100
 }
 
+/** The stock label the server gives a product (docs/API.md, Product), for local updates. */
+export function availabilityFor(stock) {
+  if (stock < 1) return 'Out of Stock'
+  return stock < 10 ? 'Low Stock' : 'In Stock'
+}
+
 /**
  * Shapes a product from GET /api/products for the components. Reviews are not embedded
  * in the product any more; reviewCount comes from the server and the reviews themselves

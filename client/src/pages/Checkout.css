@@ -169,8 +169,7 @@
   font-size: 0.8rem;
 }
 
-.checkout-items,
-.checkout-success-items {
+.checkout-items {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -178,16 +177,20 @@
   padding-top: var(--space-3);
 }
 
-.checkout-items li,
-.checkout-success-items li {
+.checkout-items li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.checkout-item-line {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   font-size: 0.88rem;
 }
 
-.checkout-items img,
-.checkout-success-items img {
+.checkout-items img {
   border-radius: var(--radius-sm);
   background-color: #f2f3f8;
   object-fit: contain;
@@ -195,10 +198,35 @@
   flex-shrink: 0;
 }
 
-.checkout-item-title,
-.checkout-success-items div {
+.checkout-item-title {
   flex: 1;
   min-width: 0;
+}
+
+.checkout-items li.is-unavailable {
+  padding: var(--space-2);
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-md);
+  background-color: #fffafa;
+}
+
+.checkout-item-issue {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 0.85rem;
+}
+
+.checkout-item-issue p {
+  flex: 1 1 200px;
+  color: #991b1b;
+  font-weight: 500;
+}
+
+.checkout-item-issue .btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
 }
 
 .checkout-item-qty {
@@ -251,76 +279,78 @@
   font-size: 1.05rem;
 }
 
-.checkout-done {
-  display: flex;
-  justify-content: center;
-  padding-block: var(--space-4);
+.checkout-summary-hint {
+  font-size: 0.8rem;
+  color: var(--color-muted);
 }
 
-.checkout-success {
-  width: min(640px, 100%);
+.checkout-prefill {
+  margin-bottom: var(--space-3);
+}
+
+.checkout-alert,
+.checkout-fixed {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  font-size: 0.875rem;
+}
+
+.checkout-alert {
+  border: 1px solid #fecaca;
+  background-color: #fef2f2;
+  color: #991b1b;
+}
+
+.checkout-fixed {
+  border: 1px solid #bbe5c8;
+  background-color: #e8f6ed;
+  color: var(--color-success);
+}
+
+.checkout-alert svg,
+.checkout-fixed svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.checkout-place-error {
+  margin-bottom: var(--space-3);
+}
+
+.checkout-uncertain {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+  font-size: 0.875rem;
+}
+
+.checkout-uncertain a {
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.checkout-loading {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-5);
-  text-align: left;
 }
 
-.checkout-success-icon {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background-color: #e8f6ed;
-  color: var(--color-success);
-  font-size: 1.4rem;
+.checkout-loading-panel {
+  height: 320px;
+  border-radius: var(--radius-lg);
 }
 
-.checkout-success-text {
+.checkout-done {
+  padding-block: var(--space-6);
+  text-align: center;
   color: var(--color-muted);
-}
-
-.checkout-success-meta {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--space-3);
-  padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg);
-  margin: 0;
-}
-
-.checkout-success-meta dt {
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-muted);
-}
-
-.checkout-success-meta dd {
-  margin: 0;
-  font-weight: 600;
-}
-
-.checkout-success-item-title {
-  font-weight: 600;
-}
-
-.checkout-success-item-meta {
-  font-size: 0.78rem;
-  color: var(--color-muted);
-}
-
-.checkout-success-address {
-  font-size: 0.85rem;
-  color: var(--color-muted);
-}
-
-.checkout-success-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
 }
 
 @media (max-width: 900px) {
@@ -342,12 +372,7 @@
     padding: var(--space-3);
   }
 
-  .checkout-success {
-    padding: var(--space-3);
-  }
-
-  .checkout-actions .btn,
-  .checkout-success-actions .btn {
+  .checkout-actions .btn {
     flex: 1;
   }
 }

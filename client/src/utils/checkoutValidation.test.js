@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  deliveryFromAccount,
   digitsOnly,
   formatCardNumber,
   formatExpiry,
@@ -44,5 +45,23 @@ describe('checkout validation', () => {
     })
     expect(validatePayment({ method: 'upi', upiId: 'name@bank' })).toEqual({})
     expect(validatePayment({ method: 'upi', upiId: 'nope' }).upiId).toBe('Enter a UPI ID such as name@bank')
+  })
+
+  it('fills the delivery form in from the account', () => {
+    const user = {
+      name: 'Asha Nair',
+      email: 'asha@example.com',
+      address: { name: '', phone: '9876543210', address: '4 Beach Road', city: 'Kochi', state: 'Kerala', pincode: '682001' }
+    }
+    expect(deliveryFromAccount(user)).toEqual({
+      name: 'Asha Nair',
+      email: 'asha@example.com',
+      phone: '9876543210',
+      address: '4 Beach Road',
+      city: 'Kochi',
+      state: 'Kerala',
+      pincode: '682001'
+    })
+    expect(deliveryFromAccount({ name: 'New Shopper', email: 'new@example.com' }).address).toBe('')
   })
 })

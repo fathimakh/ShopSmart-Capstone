@@ -405,6 +405,21 @@ export function ShopProvider({ children }) {
 
   const clearCart = useCallback(() => changeList('cart', []), [changeList])
 
+  /**
+   * Drops the lines an order has just bought. The server already took them out of the
+   * saved cart, so nothing needs sending; a cart change still waiting to be saved goes
+   * out as usual, now without the ordered lines.
+   */
+  const removeOrderedLines = useCallback(
+    (productIds) => {
+      const ordered = new Set(productIds)
+      const before = listsRef.current.cart
+      const after = writeList('cart', (current) => current.filter((line) => !ordered.has(line.id)))
+      if (after !== before && readPending().has('cart')) queueSave('cart')
+    },
+    [writeList, queueSave]
+  )
+
   const toggleWishlist = useCallback(
     (productId) => {
       const next = changeList('wishlist', (current) => {
@@ -478,6 +493,7 @@ export function ShopProvider({ children }) {
       updateQuantity,
       removeFromCart,
       clearCart,
+      removeOrderedLines,
       wishlist,
       wishlistItems,
       wishlistCount: wishlist.length,
@@ -510,6 +526,7 @@ export function ShopProvider({ children }) {
     updateQuantity,
     removeFromCart,
     clearCart,
+    removeOrderedLines,
     toggleWishlist,
     clearWishlist,
     toggleCompare,

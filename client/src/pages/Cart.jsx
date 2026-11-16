@@ -123,13 +123,32 @@ function Cart() {
             </p>
           ) : null}
 
-          <button
-            type="button"
-            className="btn btn-primary btn-block"
-            onClick={() => navigate('/checkout')}
-          >
-            Proceed to checkout
-          </button>
+          {user ? (
+            <button
+              type="button"
+              className="btn btn-primary btn-block"
+              onClick={() => navigate('/checkout')}
+            >
+              Proceed to checkout
+            </button>
+          ) : (
+            <>
+              {/* Orders belong to an account, so a guest signs in first and comes
+                  straight back to the checkout with the cart merged in. */}
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                aria-describedby="cart-sign-in-hint"
+                onClick={() => navigate('/login', { state: { from: { pathname: '/checkout' } } })}
+              >
+                Sign in to check out
+              </button>
+              <p className="cart-summary-hint" id="cart-sign-in-hint">
+                Checkout needs an account, so your order and its delivery updates are saved
+                for you. Your cart comes with you.
+              </p>
+            </>
+          )}
           <button type="button" className="btn btn-ghost btn-block" onClick={clearCart}>
             Clear cart
           </button>
