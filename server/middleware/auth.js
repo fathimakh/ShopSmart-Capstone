@@ -35,7 +35,8 @@ async function resolveUser(token) {
     throw ApiError.unauthorized('The account for this session no longer exists.', 'USER_NOT_FOUND')
   }
   if (payload.tv !== user.tokenVersion) {
-    throw ApiError.unauthorized('You were signed out after a password change.', 'TOKEN_REVOKED')
+    // The token version goes up on a password change and on "sign out everywhere".
+    throw ApiError.unauthorized('This session was signed out. Please sign in again.', 'TOKEN_REVOKED')
   }
   return user
 }

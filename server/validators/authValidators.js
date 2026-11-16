@@ -1,4 +1,4 @@
-import { email, object, password, text } from './rules.js'
+import { boolean, email, object, password, text } from './rules.js'
 
 export const registerRules = {
   name: text({ label: 'Name', min: 2, max: 50 }),
@@ -29,4 +29,8 @@ export const profileRules = {
 export const passwordChangeRules = {
   currentPassword: text({ label: 'Current password', max: 128 }),
   newPassword: password({ label: 'New password' })
+}
+
+export const logoutRules = {
+  allDevices: boolean({ label: 'All devices' })
 }

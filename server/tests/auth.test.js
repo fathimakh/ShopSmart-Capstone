@@ -158,3 +158,36 @@ describe('PATCH /api/auth/password', () => {
     assert.equal(res.body.errors[0].field, 'newPassword')
   })
 })
+
+describe('POST /api/auth/logout', () => {
+  it('signs out this device only by default', async () => {
+    const { token } = await createUser()
+    const res = await api().post('/api/auth/logout').set(bearer(token)).expect(200)
+    assert.deepEqual(res.body, { success: true, message: 'Signed out' })
+    // The client forgets its token; nothing on the server changes.
+    await api().get('/api/auth/me').set(bearer(token)).expect(200)
+  })
+
+  it('signs out every device with allDevices', async () => {
+    const { user, token } = await createUser()
+    const { token: otherShopper } = await createUser()
+    const login = await api().post('/api/auth/login').send({ email: user.email, password: DEFAULT_PASSWORD }).expect(200)
+
+    const res = await api().post('/api/auth/logout').set(bearer(token)).send({ allDevices: true }).expect(200)
+    assert.equal(res.body.message, 'Signed out on every device')
+
+    for (const stale of [token, login.body.token]) {
+      const me = await api().get('/api/auth/me').set(bearer(stale)).expect(401)
+      assert.equal(me.body.code, 'TOKEN_REVOKED')
+    }
+    await api().get('/api/auth/me').set(bearer(otherShopper)).expect(200)
+    await api().post('/api/auth/login').send({ email: user.email, password: DEFAULT_PASSWORD }).expect(200)
+  })
+
+  it('needs a token and a real boolean', async () => {
+    const { token } = await createUser()
+    assert.equal((await api().post('/api/auth/logout').expect(401)).body.code, 'NO_TOKEN')
+    const res = await api().post('/api/auth/logout').set(bearer(token)).send({ allDevices: 'yes' }).expect(400)
+    assert.equal(res.body.errors[0].field, 'allDevices')
+  })
+})

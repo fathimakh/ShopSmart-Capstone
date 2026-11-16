@@ -81,3 +81,17 @@ export async function changePassword(req, res) {
 
   res.json({ success: true, message: 'Password changed', token: generateToken(user) })
 }
+
+/**
+ * POST /api/auth/logout - a JWT cannot be taken back once it is issued, so a normal sign
+ * out is the client forgetting its token. With allDevices the token version goes up,
+ * and every token issued so far, on any device, stops working.
+ */
+export async function logout(req, res) {
+  if (req.body?.allDevices === true) {
+    await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } })
+    res.json({ success: true, message: 'Signed out on every device' })
+    return
+  }
+  res.json({ success: true, message: 'Signed out' })
+}

@@ -1,10 +1,11 @@
 import { Router } from 'express'
-import { changePassword, getMe, login, register, updateMe } from '../controllers/authController.js'
+import { changePassword, getMe, login, logout, register, updateMe } from '../controllers/authController.js'
 import { protect } from '../middleware/auth.js'
 import { authLimiter } from '../middleware/rateLimiter.js'
 import { validateBody } from '../middleware/validate.js'
 import {
   loginRules,
+  logoutRules,
   passwordChangeRules,
   profileRules,
   registerRules
@@ -22,5 +23,7 @@ router
   .patch(protect, validateBody(profileRules, { partial: true }), updateMe)
 
 router.patch('/password', protect, authLimiter, validateBody(passwordChangeRules), changePassword)
+
+router.post('/logout', protect, validateBody(logoutRules), logout)
 
 export default router
