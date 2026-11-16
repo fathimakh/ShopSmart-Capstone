@@ -7,14 +7,17 @@ import {
   listProducts,
   updateProduct
 } from '../controllers/productController.js'
-import { authorize, protect } from '../middleware/auth.js'
-import { validateBody, validateProductIdParam } from '../middleware/validate.js'
+import { deleteReview, listReviews, saveReview } from '../controllers/reviewController.js'
+import { authorize, optionalAuth, protect } from '../middleware/auth.js'
+import { validateBody, validateObjectIdParam, validateProductIdParam } from '../middleware/validate.js'
 import { productRules } from '../validators/productValidators.js'
+import { reviewRules } from '../validators/reviewValidators.js'
 
 // Mounted at /api/products
 const router = Router()
 
 router.param('id', validateProductIdParam)
+router.param('reviewId', validateObjectIdParam('review'))
 
 router
   .route('/')
@@ -28,5 +31,13 @@ router
   .get(getProduct)
   .put(protect, authorize('admin'), validateBody(productRules, { partial: true }), updateProduct)
   .delete(protect, authorize('admin'), deleteProduct)
+
+// Anyone can read reviews; a signed in shopper also gets their own review back.
+router
+  .route('/:id/reviews')
+  .get(optionalAuth, listReviews)
+  .post(protect, validateBody(reviewRules), saveReview)
+
+router.delete('/:id/reviews/:reviewId', protect, deleteReview)
 
 export default router

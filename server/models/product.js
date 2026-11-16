@@ -40,6 +40,10 @@ const productSchema = new mongoose.Schema(
     price: { type: Number, required: [true, 'Price is required'], min: [0.01, 'Price must be above zero'] },
     discountPercentage: { type: Number, min: 0, max: 90, default: 0 },
     rating: { type: Number, min: 0, max: 5, default: 0 },
+    // The rating the product came with from the catalogue. Reviews written here are
+    // blended with it (see controllers/reviewController.js), so it is kept apart from
+    // the live rating. Null until the first review is written for an older product.
+    catalogueRating: { type: Number, min: 0, max: 5, default: null, select: false },
     reviewCount: { type: Number, min: 0, default: 0 },
     stock: { type: Number, required: true, min: [0, 'Stock cannot be negative'], default: 0 },
     tags: { type: [String], default: [] },
@@ -72,6 +76,7 @@ const productSchema = new mongoose.Schema(
         // Price history and the AI summary have their own endpoints.
         delete ret.priceHistory
         delete ret.reviewSummary
+        delete ret.catalogueRating
         delete ret._id
         delete ret.__v
         delete ret.createdAt

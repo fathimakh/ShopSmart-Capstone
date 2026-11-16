@@ -32,6 +32,7 @@ function toProduct(entry, now) {
     price: entry.price,
     discountPercentage: entry.discountPercentage || 0,
     rating: entry.rating,
+    catalogueRating: entry.rating,
     reviewCount: entry.reviews.length,
     stock: entry.stock,
     tags: entry.tags || [],

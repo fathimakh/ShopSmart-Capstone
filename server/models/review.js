@@ -39,15 +39,35 @@ reviewSchema.index(
   { unique: true, partialFilterExpression: { user: { $type: 'objectId' } } }
 )
 
-/** Recounts a product's rating from its reviews after one is added or removed. */
+/**
+ * Counts a product's reviews by star, and splits them into the ones imported with the
+ * catalogue (no account behind them) and the ones shoppers wrote here, which is what
+ * the rating blend in controllers/reviewController.js needs.
+ */
 reviewSchema.statics.summarize = async function summarize(productId) {
-  const [stats] = await this.aggregate([
+  const groups = await this.aggregate([
     { $match: { product: productId } },
-    { $group: { _id: null, average: { $avg: '$rating' }, count: { $sum: 1 } } }
+    {
+      $group: {
+        _id: { written: { $eq: [{ $type: '$user' }, 'objectId'] }, stars: { $round: ['$rating', 0] } },
+        count: { $sum: 1 },
+        total: { $sum: '$rating' }
+      }
+    }
   ])
-  return stats
-    ? { rating: Math.round(stats.average * 100) / 100, reviewCount: stats.count }
-    : { rating: 0, reviewCount: 0 }
+
+  const summary = {
+    imported: { count: 0, total: 0 },
+    written: { count: 0, total: 0 },
+    breakdown: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  }
+  groups.forEach(({ _id, count, total }) => {
+    const source = _id.written ? summary.written : summary.imported
+    source.count += count
+    source.total += total
+    summary.breakdown[_id.stars] += count
+  })
+  return summary
 }
 
 const Review = mongoose.model('Review', reviewSchema)
