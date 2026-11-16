@@ -71,6 +71,30 @@ export function CatalogProvider({ children }) {
     })
   }, [])
 
+  /**
+   * Puts a product an admin has just added or edited into the loaded catalogue, replacing
+   * the copy already there. A new product goes last, where its id puts it in the
+   * catalogue's own order, so the shop shows it without reloading every product.
+   */
+  const putProduct = useCallback((product) => {
+    setProducts((current) => {
+      const index = current.findIndex((entry) => entry.id === product.id)
+      if (index === -1) return [...current, product]
+      const next = current.slice()
+      next[index] = product
+      return next
+    })
+  }, [])
+
+  /** Takes a product an admin has just deleted out of the loaded catalogue. */
+  const removeProduct = useCallback((productId) => {
+    setProducts((current) =>
+      current.some((product) => product.id === productId)
+        ? current.filter((product) => product.id !== productId)
+        : current
+    )
+  }, [])
+
   const value = useMemo(() => {
     const categories = [...new Set(products.map((product) => product.category))].sort()
     const brands = [...new Set(products.map((product) => product.brand))].sort()
@@ -88,9 +112,11 @@ export function CatalogProvider({ children }) {
         max: prices.length ? Math.ceil(Math.max(...prices)) : 0
       },
       reload: loadCatalogue,
-      updateProduct
+      updateProduct,
+      putProduct,
+      removeProduct
     }
-  }, [products, status, error, isSlow, loadCatalogue, updateProduct])
+  }, [products, status, error, isSlow, loadCatalogue, updateProduct, putProduct, removeProduct])
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
 }

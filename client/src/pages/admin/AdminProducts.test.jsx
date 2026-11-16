@@ -9,6 +9,9 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: adminUser, refreshUser: () => Promise.resolve(adminUser) })
 }))
 
+const catalog = vi.hoisted(() => ({ removeProduct: vi.fn() }))
+vi.mock('../../context/CatalogContext', () => ({ useCatalog: () => catalog }))
+
 function productRoutes(products, extra = {}) {
   let list = products
   return {
@@ -65,6 +68,7 @@ describe('AdminProducts', () => {
     expect(await screen.findByText('Product 2 was deleted')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByRole('link', { name: 'Product 2' })).not.toBeInTheDocument())
     expect(callsTo('DELETE /products/2')).toHaveLength(1)
+    expect(catalog.removeProduct).toHaveBeenCalledWith(2)
     await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: /1 product in the catalogue/ })).toHaveFocus())
   })
 

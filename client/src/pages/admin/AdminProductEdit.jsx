@@ -5,10 +5,12 @@ import AdminLoadError from '../../components/admin/AdminLoadError/AdminLoadError
 import AdminPageHeader from '../../components/admin/AdminPageHeader/AdminPageHeader'
 import PriceHistoryPanel from '../../components/admin/PriceHistoryPanel/PriceHistoryPanel'
 import ProductForm from '../../components/admin/ProductForm/ProductForm'
+import { useCatalog } from '../../context/CatalogContext'
 import useAdminMutation from '../../hooks/useAdminMutation'
 import useAdminResource from '../../hooks/useAdminResource'
 import usePageTitle from '../../hooks/usePageTitle'
 import { createProduct, updateProduct } from '../../services/adminApi'
+import { normalizeProduct } from '../../services/api'
 import {
   changedProductFields,
   emptyProductValues,
@@ -39,6 +41,7 @@ function AdminProductEdit() {
   const heading = useRef(null)
   const [historyVersion, setHistoryVersion] = useState(0)
   const { run, isPending } = useAdminMutation()
+  const { putProduct } = useCatalog()
 
   const productResource = useAdminResource(isEdit && validId ? `/products/${id}` : null, {
     keepPreviousData: false
@@ -54,6 +57,9 @@ function AdminProductEdit() {
       successMessage: (body) => `${body.product.title} was added as product #${body.product.id}`
     })
     if (!result.ok) return { ok: false, error: result.error }
+    // The shop already holds the catalogue in memory, so the new product is put there too
+    // and is on sale in the storefront at once, not after the next full reload.
+    putProduct(normalizeProduct(result.data.product))
     // Newest first, so the product just added is the first row of the table.
     navigate('/admin/products?sort=newest')
     return null
@@ -78,6 +84,7 @@ function AdminProductEdit() {
     }
 
     const saved = result.data.product
+    putProduct(normalizeProduct(saved))
     productResource.setData((current) => ({ ...current, product: saved }))
     if (priceChanged) setHistoryVersion((version) => version + 1)
     return {

@@ -6,6 +6,7 @@ import AdminPageHeader from '../../components/admin/AdminPageHeader/AdminPageHea
 import AdminPagination from '../../components/admin/AdminPagination/AdminPagination'
 import AdminSearch from '../../components/admin/AdminSearch/AdminSearch'
 import ConfirmDialog from '../../components/admin/ConfirmDialog/ConfirmDialog'
+import { useCatalog } from '../../context/CatalogContext'
 import useAdminFilters from '../../hooks/useAdminFilters'
 import useAdminMutation from '../../hooks/useAdminMutation'
 import useAdminResource from '../../hooks/useAdminResource'
@@ -59,6 +60,7 @@ function AdminProducts() {
   const [filters, setFilters, resetFilters] = useAdminFilters(DEFAULT_FILTERS)
   const [deleteTarget, setDeleteTarget] = useState(null)
   const { run, isPending, error: deleteError, resetError } = useAdminMutation()
+  const { removeProduct } = useCatalog()
 
   const sort = SORTS.some((option) => option.value === filters.sort) ? filters.sort : 'featured'
   const stockFilter = STOCK_FILTERS[filters.stock] || null
@@ -111,6 +113,8 @@ function AdminProducts() {
       notify(`${product.title} had already been deleted`, { tone: 'error' })
     }
 
+    // Gone from the shop as well, so a shopper on this device cannot open or buy it.
+    removeProduct(product.id)
     focusListAfterDelete.current = true
     setData((current) =>
       current

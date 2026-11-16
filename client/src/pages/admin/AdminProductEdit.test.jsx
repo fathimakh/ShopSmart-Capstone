@@ -9,6 +9,9 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: adminUser, refreshUser: () => Promise.resolve(adminUser) })
 }))
 
+const catalog = vi.hoisted(() => ({ putProduct: vi.fn() }))
+vi.mock('../../context/CatalogContext', () => ({ useCatalog: () => catalog }))
+
 const editRoute = { path: '/admin/products/5/edit', route: '/admin/products/:id/edit' }
 
 function historyAnswer(prices) {
@@ -48,6 +51,7 @@ describe('AdminProductEdit', () => {
 
     expect(await screen.findByText('Saved. $8.50 was added to the price history')).toBeInTheDocument()
     expect(callsTo('PUT /products/5')[0].body).toEqual({ price: 8.5 })
+    expect(catalog.putProduct).toHaveBeenCalledWith(expect.objectContaining({ id: 5, price: 8.5 }))
     expect(await screen.findByText(/2 prices recorded/)).toBeInTheDocument()
     expect(screen.getByText('Just added')).toBeInTheDocument()
     expect(screen.getByLabelText('Price in US dollars')).toHaveValue('8.5')
@@ -83,7 +87,8 @@ describe('AdminProductEdit', () => {
       'GET /products/categories': () => [200, { success: true, categories: [] }],
       'POST /products': ({ body }) => [201, { success: true, product: { ...apiProduct(195), ...body } }]
     })
-    renderAdminPage(<AdminProductEdit />, { path: '/admin/products/new', route: '/admin/products/new' })
+    // Any path matches, so the table address the form opens afterwards is a known route.
+    renderAdminPage(<AdminProductEdit />, { path: '/admin/products/new' })
 
     fireEvent.change(screen.getByLabelText('Title'), { target: { value: 'Teapot' } })
     fireEvent.change(screen.getByLabelText('Category'), { target: { value: 'kitchen-accessories' } })
@@ -95,6 +100,7 @@ describe('AdminProductEdit', () => {
 
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/admin/products?sort=newest'))
     expect(screen.getByText('Teapot was added as product #195')).toBeInTheDocument()
+    expect(catalog.putProduct).toHaveBeenCalledWith(expect.objectContaining({ id: 195, title: 'Teapot', stock: 7 }))
     expect(callsTo('POST /products')[0].body).toEqual({
       title: 'Teapot',
       category: 'kitchen-accessories',
