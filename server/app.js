@@ -12,6 +12,7 @@ import productRoutes from './routes/productRoutes.js'
 import listRoutes from './routes/listRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
 import aiRoutes from './routes/aiRoutes.js'
+import adminRoutes from './routes/adminRoutes.js'
 
 // During development the client may run on any localhost port (Vite moves to the next
 // free one when 3000 is taken), so every local origin is allowed there.
@@ -71,6 +72,7 @@ app.use('/api/products', productRoutes)
 app.use('/api/lists', listRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/ai', aiRoutes)
+app.use('/api/admin', adminRoutes)
 
 app.use(notFound)
 app.use(errorHandler)
