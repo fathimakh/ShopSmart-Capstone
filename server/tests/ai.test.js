@@ -44,6 +44,8 @@ before(async () => {
   await createProduct({ category: 'smartphones', brand: 'Samsung' })
   await createProduct({ category: 'laptops', brand: 'Apple' })
   await createProduct({ category: 'mens-shoes', brand: 'Nike' })
+  // A blank brand, as an admin edit can leave, is never offered to the model.
+  await createProduct({ category: 'mens-shoes', brand: '' })
 })
 
 beforeEach(() => {

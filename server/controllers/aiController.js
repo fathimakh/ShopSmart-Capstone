@@ -25,9 +25,10 @@ export async function searchWithAi(req, res) {
   const { query, previous } = req.body
   const [categories, brands] = await Promise.all([Product.distinct('category'), Product.distinct('brand')])
 
+  // An admin edit can leave a blank brand, which must not become an option for the model.
   const result = await parseShoppingQuery(query, {
-    categories: categories.sort(),
-    brands: brands.sort((first, second) => first.localeCompare(second)),
+    categories: categories.filter(Boolean).sort(),
+    brands: brands.filter(Boolean).sort((first, second) => first.localeCompare(second)),
     previous: previous ?? null
   })
   res.json({ success: true, result, source: 'gemini' })
