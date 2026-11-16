@@ -24,6 +24,13 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 4173,
       proxy: apiProxy
+    },
+    test: {
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.js',
+      css: false,
+      restoreMocks: true,
+      unstubGlobals: true
     }
   }
 })
