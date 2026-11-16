@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   createProduct,
   deleteProduct,
+  getPriceHistory,
   getProduct,
   listCategories,
   listProducts,
@@ -31,6 +32,8 @@ router
   .get(getProduct)
   .put(protect, authorize('admin'), validateBody(productRules, { partial: true }), updateProduct)
   .delete(protect, authorize('admin'), deleteProduct)
+
+router.get('/:id/price-history', getPriceHistory)
 
 // Anyone can read reviews; a signed in shopper also gets their own review back.
 router

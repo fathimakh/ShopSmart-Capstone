@@ -8,10 +8,11 @@
  */
 
 const DAY = 24 * 60 * 60 * 1000
-const WEEK = 7 * DAY
+export const WEEK = 7 * DAY
 export const SEED_WEEKS = 12
-const FORECAST_WEEKS = 2
-const MIN_POINTS = 3
+export const FORECAST_WEEKS = 2
+// A line through one or two points says nothing about a trend.
+export const MIN_POINTS = 3
 
 // Small deterministic generator so a product always gets the same starting history.
 function seededRandom(seed) {

@@ -2,6 +2,7 @@ import { nextSequence } from '../models/counter.js'
 import Product, { pushPricePoint } from '../models/product.js'
 import Review from '../models/review.js'
 import User from '../models/user.js'
+import { FORECAST_WEEKS, MIN_POINTS, WEEK, predictPrice } from '../services/pricePredict.js'
 import ApiError from '../utils/ApiError.js'
 import { buildPagination, createQueryReader, escapeRegex } from '../utils/queryReader.js'
 import { productRules } from '../validators/productValidators.js'
@@ -96,6 +97,36 @@ export async function findProductOr404(id, projection) {
 export async function getProduct(req, res) {
   const product = await findProductOr404(req.productId)
   res.json({ success: true, product })
+}
+
+/**
+ * GET /api/products/:id/price-history - the recorded prices with their dates (weekly from
+ * the seed, plus a point for every admin price change) and the forecast fitted through
+ * them. With fewer than three points there is no trend yet, so the forecast is today's
+ * price with zero confidence.
+ */
+export async function getPriceHistory(req, res) {
+  const product = await findProductOr404(req.productId, '+priceHistory')
+  const points = product.priceHistory
+    .map(({ price, at }) => ({ price, at }))
+    .sort((first, second) => first.at - second.at)
+  const prediction = predictPrice(points, product.price)
+
+  res.json({
+    success: true,
+    productId: product.id,
+    currentPrice: product.price,
+    points,
+    prediction: {
+      forecast: prediction.forecast,
+      forecastAt: new Date(Date.now() + FORECAST_WEEKS * WEEK),
+      changePercent: prediction.changePercent,
+      confidence: prediction.confidence,
+      verdict: prediction.verdict,
+      weeks: prediction.weeks,
+      hasEnoughData: points.length >= MIN_POINTS
+    }
+  })
 }
 
 function pickProductFields(body) {
