@@ -3,7 +3,10 @@
   flex-direction: column;
 }
 
+/* position: relative makes the scroller the containing block of the visually hidden
+   button labels in the table, so they are clipped with it instead of widening the page. */
 .compare-scroll {
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
