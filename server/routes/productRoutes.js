@@ -8,8 +8,10 @@ import {
   listProducts,
   updateProduct
 } from '../controllers/productController.js'
+import { generateReviewSummary, serveCachedReviewSummary } from '../controllers/aiController.js'
 import { deleteReview, listReviews, saveReview } from '../controllers/reviewController.js'
 import { authorize, optionalAuth, protect } from '../middleware/auth.js'
+import { aiLimiter } from '../middleware/rateLimiter.js'
 import { validateBody, validateObjectIdParam, validateProductIdParam } from '../middleware/validate.js'
 import { productRules } from '../validators/productValidators.js'
 import { reviewRules } from '../validators/reviewValidators.js'
@@ -34,6 +36,9 @@ router
   .delete(protect, authorize('admin'), deleteProduct)
 
 router.get('/:id/price-history', getPriceHistory)
+
+// A cached summary is answered before the AI rate limiter; only a fresh one counts.
+router.get('/:id/review-summary', serveCachedReviewSummary, aiLimiter, generateReviewSummary)
 
 // Anyone can read reviews; a signed in shopper also gets their own review back.
 router

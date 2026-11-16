@@ -1,6 +1,8 @@
-import { api, createProduct, env, useTestDatabase } from './helpers/testApp.js'
+import { api, bearer, createProduct, createUser, env, useTestDatabase } from './helpers/testApp.js'
 import assert from 'node:assert/strict'
 import { after, before, beforeEach, describe, it } from 'node:test'
+import Product from '../models/product.js'
+import Review from '../models/review.js'
 
 useTestDatabase('ai')
 
@@ -179,5 +181,116 @@ describe('POST /api/ai/search', () => {
       .send({ query: 'cheaper', previous: { query: 'phones', filters: { keywords: ['x'.repeat(2100)] } } })
       .expect(400)
     assert.equal(huge.body.errors[0].field, 'previous.filters')
+  })
+})
+
+describe('GET /api/products/:id/review-summary', () => {
+  const summaryAnswer = {
+    verdict: 'Shoppers like the sound but not the battery.',
+    pros: ['Clear sound', 'clear sound', '  Comfortable fit  '],
+    cons: ['Short battery life']
+  }
+
+  async function reviewedProduct(count = 3) {
+    const product = await createProduct()
+    await Review.insertMany(
+      Array.from({ length: count }, (_, index) => {
+        const writtenAt = new Date(Date.now() - (count - index) * 60000)
+        return {
+          product: product.id,
+          reviewerName: `Reviewer ${index + 1}`,
+          rating: 4,
+          comment: `Review number ${index + 1}`,
+          createdAt: writtenAt,
+          updatedAt: writtenAt
+        }
+      }),
+      { timestamps: false }
+    )
+    return product
+  }
+
+  it('has nothing to summarise without reviews', async (t) => {
+    const fetchMock = stubGemini(t, () => geminiReply(summaryAnswer))
+    const product = await createProduct()
+    const res = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.deepEqual(res.body, { success: true, summary: null, cached: false })
+    assert.equal(fetchMock.mock.callCount(), 0)
+  })
+
+  it('writes a summary once and serves it from the cache until the reviews change', async (t) => {
+    const fetchMock = stubGemini(t, () => geminiReply(summaryAnswer))
+    const product = await reviewedProduct(3)
+
+    const first = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.equal(first.body.cached, false)
+    assert.deepEqual(
+      { ...first.body.summary, generatedAt: undefined },
+      {
+        verdict: 'Shoppers like the sound but not the battery.',
+        pros: ['Clear sound', 'Comfortable fit'],
+        cons: ['Short battery life'],
+        basedOn: 3,
+        generatedAt: undefined
+      }
+    )
+    assert.ok(Date.parse(first.body.summary.generatedAt))
+
+    const prompt = requestBody(fetchMock).contents[0].parts[0].text
+    assert.ok(prompt.indexOf('Review number 3') < prompt.indexOf('Review number 1'), 'newest reviews come first')
+
+    const second = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.equal(second.body.cached, true)
+    assert.deepEqual(second.body.summary, first.body.summary)
+    assert.equal(fetchMock.mock.callCount(), 1)
+
+    const { token } = await createUser()
+    await api()
+      .post(`/api/products/${product.id}/reviews`)
+      .set(bearer(token))
+      .send({ rating: 2, comment: 'The battery died in a week' })
+      .expect(201)
+
+    const third = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.equal(third.body.cached, false)
+    assert.equal(third.body.summary.basedOn, 4)
+    assert.equal(fetchMock.mock.callCount(), 2)
+  })
+
+  it('reads at most the newest 50 reviews', async (t) => {
+    const fetchMock = stubGemini(t, () => geminiReply(summaryAnswer))
+    const product = await reviewedProduct(52)
+    const res = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.equal(res.body.summary.basedOn, 50)
+    assert.doesNotMatch(requestBody(fetchMock).contents[0].parts[0].text, /"Review number 1"/)
+  })
+
+  it('still serves a cached summary when the key is removed', async (t) => {
+    stubGemini(t, () => geminiReply(summaryAnswer))
+    const product = await reviewedProduct()
+    await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+
+    env.geminiApiKey = ''
+    const res = await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    assert.equal(res.body.cached, true)
+
+    const fresh = await reviewedProduct()
+    const missing = await api().get(`/api/products/${fresh.id}/review-summary`).expect(503)
+    assert.equal(missing.body.code, 'AI_UNAVAILABLE')
+  })
+
+  it('caches nothing when the answer is unusable', async (t) => {
+    stubGemini(t, () => geminiReply({ verdict: '   ', pros: [], cons: [] }))
+    const product = await reviewedProduct()
+    const res = await api().get(`/api/products/${product.id}/review-summary`).expect(502)
+    assert.equal(res.body.code, 'AI_FAILED')
+
+    const stored = await Product.findOne({ id: product.id }).select('+reviewSummary')
+    assert.equal(stored.reviewSummary, null)
+  })
+
+  it('answers 404 for an unknown product', async () => {
+    const res = await api().get('/api/products/999999/review-summary').expect(404)
+    assert.equal(res.body.code, 'PRODUCT_NOT_FOUND')
   })
 })

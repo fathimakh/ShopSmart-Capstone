@@ -18,14 +18,16 @@ const pricePointSchema = new mongoose.Schema(
   { _id: false }
 )
 
-// Gemini's summary of the reviews, kept until a new review makes it stale.
+// Gemini's summary of the reviews, kept until a new review makes it stale. The
+// fingerprint identifies the reviews it was written from (services/reviewSummary.js).
 const reviewSummarySchema = new mongoose.Schema(
   {
-    text: { type: String, default: '' },
+    verdict: { type: String, default: '' },
     pros: { type: [String], default: [] },
     cons: { type: [String], default: [] },
     basedOn: { type: Number, default: 0 },
-    generatedAt: { type: Date, default: null }
+    generatedAt: { type: Date, default: null },
+    fingerprint: { type: String, default: '' }
   },
   { _id: false }
 )
