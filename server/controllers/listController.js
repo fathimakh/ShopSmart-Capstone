@@ -71,7 +71,8 @@ export async function replaceViewed(req, res) {
  * joins what the account already had, so nothing collected before signing in is lost.
  */
 export async function mergeLists(req, res) {
-  const { cart = [], wishlist = [], recentlyViewed = [] } = req.body
+  // Every field is optional, and a request without a JSON body leaves req.body undefined.
+  const { cart = [], wishlist = [], recentlyViewed = [] } = req.body ?? {}
   const current = listsOf(req.user)
 
   req.user.cart = await cleanCart([...current.cart, ...cart])

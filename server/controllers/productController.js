@@ -139,7 +139,7 @@ export async function updateProduct(req, res) {
   }
 
   const product = await Product.findOneAndUpdate({ id: req.productId }, update, {
-    new: true,
+    returnDocument: 'after',
     runValidators: true
   })
   res.json({ success: true, product })
