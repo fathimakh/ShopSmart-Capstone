@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   FiCheck,
   FiChevronRight,
@@ -46,10 +46,14 @@ function deliveryDate(order) {
 function OrderDetails() {
   const { number } = useParams()
   const location = useLocation()
-  const justPlaced = Boolean(location.state?.justPlaced)
+  const navigate = useNavigate()
   // Checkout hands over the order it just placed, so the page can show it at once.
   const handedOver = location.state?.order
   const initialOrder = isOrder(handedOver, number) ? handedOver : null
+  // Kept from the first render, because the router state is cleared below.
+  const [placedNumber] = useState(() =>
+    location.state?.justPlaced && initialOrder ? initialOrder.number : null
+  )
 
   const [loadedOrder, setOrder] = useState(initialOrder)
   const [status, setStatus] = useState(initialOrder ? 'ready' : 'loading')
@@ -72,6 +76,14 @@ function OrderDetails() {
 
   // After following a link to another order, the previous one is not shown in its place.
   const order = isOrder(loadedOrder, number) ? loadedOrder : null
+  // The confirmation greets the checkout once. It is not shown again for a cancelled order.
+  const justPlaced = Boolean(order && order.number === placedNumber && order.status !== 'cancelled')
+
+  // The browser keeps router state through a reload and the back button, which would
+  // greet the shopper with "Order confirmed" and an old copy of the order every time.
+  useEffect(() => {
+    if (location.state) navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, navigate])
 
   const shownOrder = useRef(order)
   shownOrder.current = order

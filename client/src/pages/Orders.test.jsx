@@ -189,6 +189,36 @@ describe('OrderDetails page', () => {
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument()
   })
 
+  it('greets a new order once, without the router state that would greet it again after a reload', async () => {
+    const placed = makeOrder()
+    const cancelled = makeOrder({
+      status: 'cancelled',
+      statusHistory: [...placed.statusHistory, { status: 'cancelled', at: placedAt, note: 'Cancelled by the shopper' }]
+    })
+    fakeApi(
+      accountRoutes({
+        'GET /orders/SS100001': () => [200, { success: true, order: placed }],
+        'PATCH /orders/SS100001/cancel': () => [200, { success: true, order: cancelled }]
+      })
+    )
+    renderShopPage(<OrderDetails />, {
+      path: '/orders/:number',
+      url: '/orders/SS100001',
+      state: { justPlaced: true, order: placed }
+    })
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Order confirmed' })).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveAttribute('data-state', 'null'))
+    expect(screen.getByRole('heading', { level: 1, name: 'Order confirmed' })).toBeInTheDocument()
+
+    // A cancelled order is no longer greeted as placed.
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, cancel the order' }))
+    expect(await screen.findByText(/Your order is cancelled/)).toHaveFocus()
+    expect(screen.getByRole('heading', { level: 1, name: 'Order SS100001' })).toBeInTheDocument()
+    expect(screen.queryByText('Order confirmed')).not.toBeInTheDocument()
+  })
+
   it('says when the order is not on the account', async () => {
     fakeApi(
       accountRoutes({
