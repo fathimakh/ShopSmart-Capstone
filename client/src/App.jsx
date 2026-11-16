@@ -5,8 +5,10 @@ import Footer from './components/Footer/Footer'
 import CompareBar from './components/CompareBar/CompareBar'
 import BottomNav from './components/BottomNav/BottomNav'
 import CatalogueError from './components/CatalogueError/CatalogueError'
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute'
 import Home from './pages/Home'
 import { useCatalog } from './context/CatalogContext'
+import useRouteFocus from './hooks/useRouteFocus'
 import './App.css'
 
 // The shop page loads with the app; the rest arrive when the shopper navigates to them.
@@ -19,13 +21,17 @@ const Checkout = lazy(() => import('./pages/Checkout'))
 const CategoryPage = lazy(() => import('./pages/CategoryPage'))
 const Orders = lazy(() => import('./pages/Orders'))
 const OrderDetails = lazy(() => import('./pages/OrderDetails'))
+const Login = lazy(() => import('./pages/Login'))
+const Register = lazy(() => import('./pages/Register'))
+const Account = lazy(() => import('./pages/Account'))
+const AdminApp = lazy(() => import('./pages/admin/AdminApp'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 // Pages that end in a fixed composer read better without the footer below them.
 const pagesWithoutFooter = ['/assistant']
 
 // Pages that work without the product catalogue, so they stay usable when it fails to load.
-const pagesWithoutCatalogue = ['/orders']
+const pagesWithoutCatalogue = ['/login', '/register', '/account', '/orders', '/admin']
 
 function needsCatalogue(pathname) {
   return !pagesWithoutCatalogue.some(
@@ -38,6 +44,7 @@ function App() {
   const { status: catalogueStatus } = useCatalog()
   const showFooter = !pagesWithoutFooter.includes(pathname)
   const catalogueFailed = catalogueStatus === 'error' && needsCatalogue(pathname)
+  useRouteFocus()
 
   return (
     <div className="app">
@@ -45,7 +52,7 @@ function App() {
         Skip to main content
       </a>
       <Header />
-      <main id="main-content" className="app-main">
+      <main id="main-content" className="app-main" tabIndex={-1}>
         {catalogueFailed ? (
           <CatalogueError />
         ) : (
@@ -58,9 +65,49 @@ function App() {
               <Route path="/wishlist" element={<Wishlist />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/assistant" element={<Assistant />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/orders/:number" element={<OrderDetails />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route
+                path="/account"
+                element={
+                  <ProtectedRoute>
+                    <Account />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ProtectedRoute>
+                    <Checkout />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute>
+                    <Orders />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/orders/:number"
+                element={
+                  <ProtectedRoute>
+                    <OrderDetails />
+                  </ProtectedRoute>
+                }
+              />
+              {/* The admin area brings its own nested routes. */}
+              <Route
+                path="/admin/*"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminApp />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

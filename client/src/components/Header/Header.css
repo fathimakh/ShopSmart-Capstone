@@ -155,6 +155,18 @@
   }
 }
 
+/* Signed in admins get eight links with counts, which only fit side by side on narrower
+   laptops once the icons step aside and the padding tightens. */
+@media (min-width: 900px) and (max-width: 1099px) {
+  .header-link {
+    padding-inline: 10px;
+  }
+
+  .header-link > svg {
+    display: none;
+  }
+}
+
 /* The strip has to stay on one line, so the longer half steps aside on phones. */
 @media (max-width: 600px) {
   .header-strip-divider,

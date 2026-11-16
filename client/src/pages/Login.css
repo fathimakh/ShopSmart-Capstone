@@ -1,0 +1,65 @@
+.login-demo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px dashed #c7d2fe;
+  border-radius: var(--radius-md);
+  background-color: var(--color-primary-soft);
+}
+
+.login-demo h2 {
+  font-size: 1rem;
+  color: var(--color-primary-dark);
+}
+
+.login-demo > p {
+  margin-top: calc(var(--space-2) * -1);
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+
+.login-demo-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.login-demo-buttons .btn {
+  text-transform: capitalize;
+}
+
+.login-demo-accounts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-muted);
+}
+
+.login-demo-accounts div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.login-demo-accounts dt {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.login-demo-accounts dt::after {
+  content: ':';
+}
+
+.login-demo-accounts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .login-demo-buttons {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

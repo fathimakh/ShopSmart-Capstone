@@ -9,6 +9,13 @@
   padding-block: var(--space-4) var(--space-6);
 }
 
+/* Focus lands on the main area or the page heading after navigation so screen readers
+   start at the new page. Neither can be operated, so they need no focus ring. */
+.app-main:focus,
+.app-main h1:focus {
+  outline: none;
+}
+
 .app-loading {
   padding: var(--space-6) var(--space-3);
   text-align: center;

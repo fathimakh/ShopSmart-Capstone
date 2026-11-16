@@ -1,0 +1,31 @@
+.protected-checking {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding-block: var(--space-6);
+  color: var(--color-muted);
+}
+
+.protected-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-primary-soft);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: protected-spin 0.8s linear infinite;
+}
+
+@keyframes protected-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.protected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

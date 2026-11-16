@@ -1,20 +1,44 @@
 import { NavLink } from 'react-router-dom'
-import { FiGrid, FiHeart, FiPackage, FiShoppingCart, FiZap } from 'react-icons/fi'
+import {
+  FiGrid,
+  FiHeart,
+  FiLogIn,
+  FiPackage,
+  FiSettings,
+  FiShoppingCart,
+  FiUser,
+  FiZap
+} from 'react-icons/fi'
 import { useShop } from '../../context/ShopContext'
+import { useAuth } from '../../context/AuthContext'
 import './BottomNav.css'
 
-const items = [
-  { to: '/', label: 'Shop', icon: FiGrid, end: true, countKey: null },
-  { to: '/assistant', label: 'Assistant', icon: FiZap, countKey: null },
-  { to: '/wishlist', label: 'Saved', icon: FiHeart, countKey: 'wishlistCount' },
-  { to: '/orders', label: 'Orders', icon: FiPackage, countKey: null },
-  { to: '/cart', label: 'Cart', icon: FiShoppingCart, countKey: 'cartCount' }
-]
+const shopItem = { to: '/', label: 'Shop', icon: FiGrid, end: true, countKey: null }
+const assistantItem = { to: '/assistant', label: 'Assistant', icon: FiZap, countKey: null }
+const savedItem = { to: '/wishlist', label: 'Saved', icon: FiHeart, countKey: 'wishlistCount' }
+const ordersItem = { to: '/orders', label: 'Orders', icon: FiPackage, countKey: null }
+const adminItem = { to: '/admin', label: 'Admin', icon: FiSettings, countKey: null }
+const cartItem = { to: '/cart', label: 'Cart', icon: FiShoppingCart, countKey: 'cartCount' }
+const accountItem = { to: '/account', label: 'Account', icon: FiUser, countKey: null }
+const signInItem = { to: '/login', label: 'Sign in', icon: FiLogIn, countKey: null }
 
 // Phone sized screens get the usual thumb reachable bar instead of reaching for the
 // menu button in the top corner.
 function BottomNav() {
   const counts = useShop()
+  const { user, status, isAdmin } = useAuth()
+  const hasSession = Boolean(user) || status === 'checking' || status === 'error'
+
+  // Six tabs is the most that keeps every label readable on a 360px screen, so admins
+  // trade Orders (still in the menu and on the account page) for the admin area.
+  const items = [
+    shopItem,
+    assistantItem,
+    savedItem,
+    isAdmin ? adminItem : ordersItem,
+    cartItem,
+    hasSession ? accountItem : signInItem
+  ]
 
   return (
     <nav className="bottom-nav" aria-label="Primary mobile">

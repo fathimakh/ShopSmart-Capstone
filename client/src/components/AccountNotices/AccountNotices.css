@@ -1,0 +1,58 @@
+.account-notices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.account-notices:not(:empty) {
+  padding-bottom: var(--space-2);
+}
+
+.account-notice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid #fde3b0;
+  border-radius: var(--radius-md);
+  background-color: var(--color-accent-soft);
+  color: #8a4d03;
+  font-size: 0.875rem;
+}
+
+.account-notice > svg {
+  flex-shrink: 0;
+  font-size: 1.05rem;
+}
+
+.account-notice p {
+  flex: 1 1 260px;
+}
+
+.account-notice-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-left: auto;
+}
+
+.account-notice-actions .btn {
+  padding: 6px 12px;
+  font-size: 0.82rem;
+}
+
+.account-notice-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: inherit;
+}
+
+.account-notice-close:hover {
+  background-color: rgba(138, 77, 3, 0.1);
+}
