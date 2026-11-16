@@ -24,17 +24,18 @@ that survive a page refresh.
 - **Product catalogue** - responsive grid of products with images, prices, discounts, ratings and low stock hints, loaded from a public API with skeleton loading states
 - **Advanced filtering** - filter by category, brand, price band or custom price range, and minimum customer rating, with every active filter shown as a chip you can remove in one tap
 - **Search and sort** - debounced keyword search plus seven sort options including price, rating, popularity and newest
-- **Product details** - image gallery, full specifications, customer reviews, stock and shipping information
+- **Product details** - image gallery, full specifications, stock and shipping information, and customer reviews with a star breakdown, verified purchase badges and a form to write, edit or delete your own
 - **Comparison tool** - line up to four products side by side with the lowest price and best rated options flagged
 - **Shopping cart** - quantity controls, discount savings, free delivery threshold, saved to local storage
-- **Demonstration checkout** - a three step delivery, payment and review flow with live validation, ending in an order confirmation with an order number and delivery date
-- **Order history** - every demo order is kept on the device, with its status, delivery address, payment summary and a buy again button
+- **Checkout** - a three step delivery, payment and review flow for signed in shoppers, filled in from the saved address. The order is priced and saved by the API, which also sets the stock aside; lines that sold out meanwhile are marked with a way to fix them. No payment is taken
+- **Order history** - every order on the account, with its status timeline, delivery address, payment summary, cancelling while it is still processing, and a buy again button
 - **Wishlist** - save products for later and move the whole list to the cart in one click
 - **Responsive design** - tested at 375px, 768px and 1920px
 - **AI: shopping assistant page** - a dedicated chat where you describe what you need, see the products inline, and keep refining across turns
-- **AI: natural language search** - the Gemini API works out the filters from a sentence, with an on-device parser as backup
+- **AI: natural language search** - Gemini, called by the ShopSmart server, works out the filters from a sentence, with an on-device parser as backup
+- **AI: review summary** - Gemini sums up a product's reviews as a short verdict with pros and cons, written on the server and cached until the reviews change
 - **AI: recommendation engine** - "Recommended for you" and "Similar products" built from what you view, save and buy
-- **AI: price drop prediction** - a fitted price trend that estimates the price two weeks out
+- **AI: price drop prediction** - a trend fitted to the product's recorded weekly prices that estimates the price two weeks out
 
 ## 🎯 Project Goals
 
@@ -58,8 +59,8 @@ for the best.
 
 ## 🤖 AI Integration
 
-Three AI features power the app. Two of them run entirely in the browser; the third calls
-the Gemini API when a key is available. Each one is described below with the idea behind it.
+The AI features are described below with the idea behind each. Gemini is only ever called
+by the ShopSmart server, so its key never reaches the browser.
 
 ### 1. Shopping assistant and natural language search
 
@@ -83,8 +84,10 @@ message, so a follow-up refines instead of starting over:
 The conversation is kept in local storage, so leaving the page and coming back does not
 lose it. Two engines sit behind the box.
 
-**Gemini (`src/services/gemini.js`).** The request goes to `gemini-2.5-flash` along with
-the exact category slugs and brand names in the catalogue. A response schema forces the
+**Gemini (`POST /api/ai/search`, `server/services/aiSearch.js`).** The client sends the
+message, and the earlier turn for a follow-up, to the ShopSmart API (`src/services/ai.js`).
+The server sends it to `gemini-2.5-flash` along with the exact category slugs and brand
+names in the database. A response schema forces the
 model to reply with structured JSON rather than prose, and thinking is disabled to keep
 the round trip near a second. Its answer is never trusted directly: categories and brands
 are checked against the real catalogue, prices are sanity checked and swapped if reversed,
@@ -97,8 +100,9 @@ is what handles a request with no product words in it at all:
 | `gift for my wife who loves perfume, up to 150` | Fragrances, max price 150, keyword "gift" |
 | `best rated laptop for college, budget around 900` | Laptops, max price 900, sorted by rating |
 
-**On-device parser (`src/utils/nlpSearch.js`).** If no API key is configured, the request
-fails or the model returns nothing usable, the same sentence is parsed locally instead,
+**On-device parser (`src/utils/nlpSearch.js`).** If the server has no Gemini key
+(`GET /api/ai/status` says so), the request fails or times out, or the model returns
+nothing usable, the same sentence is parsed locally instead,
 and `mergeWithPrevious` carries the earlier filters over so follow-ups still work.
 It recognises price phrases (`under`, `over`, `between`, `around`, `1k`), rating phrases,
 discount wording, sort intent, gender hints and around 90 everyday product words:
@@ -112,8 +116,8 @@ discount wording, sort intent, gender hints and around 90 everyday product words
 Whichever engine answers, the leftover words become keywords and products are ranked
 against them with TF-IDF cosine relevance (`src/utils/textIndex.js`), so a rare word like
 "titanium" counts for far more than a common one. The result is always shown back as
-chips with a label saying whether Gemini or the device read the sentence, so the shopper
-can see why the product list changed.
+chips with a label saying whether Gemini or the device read the sentence, and why the
+device stepped in, so the shopper can see why the product list changed.
 
 ### 2. Recommendation engine
 
@@ -126,12 +130,14 @@ higher, and returns the closest products you have not seen yet.
 
 ### 3. Price drop prediction
 
-`src/utils/pricePredict.js` reconstructs a twelve week price history for each product
-from its current and pre-discount price, using a seeded generator so the chart is stable
-between renders. A least squares regression is fitted to that history, extended two
-weeks forward, and the R squared value of the fit becomes the confidence figure. The
-product page shows the trend line, the dashed forecast, and a plain English verdict:
-likely to drop, likely to rise or holding steady.
+Every product keeps its recorded prices on the server: twelve weekly prices from the
+seed, plus a new point whenever an admin changes the price.
+`GET /api/products/:id/price-history` fits a least squares line through them against time,
+extends it two weeks forward, and turns the R squared value of the fit into the
+confidence figure. The product page draws the recorded prices by date with the dashed
+forecast (`src/utils/priceChart.js`) and a plain English verdict: likely to drop, likely
+to rise or holding steady. A product with fewer than three recorded prices says there is
+not enough history yet instead.
 
 **Challenges faced.** Getting a language model to return something a UI can use was the
 first problem: free text answers were impossible to filter with, so the request moves to
@@ -176,16 +182,11 @@ category, brand or vocabulary.
 
 4. Add a Gemini API key (optional)
 
-   ```bash
-   cp .env.example .env.local
-   ```
-
-   Put a key from [Google AI Studio](https://aistudio.google.com/apikey) in
-   `.env.local` as `VITE_GEMINI_API_KEY`. The file is git ignored and is never
-   committed. Skip this step and natural language search falls back to the parser
-   that runs in the browser, so nothing breaks without a key.
-
-   When deploying, add the same variable in the Vercel or Netlify project settings.
+   The key belongs to the server only: put a key from
+   [Google AI Studio](https://aistudio.google.com/apikey) in `server/.env` as
+   `GEMINI_API_KEY`. The client has no AI key of its own. Without one, natural language
+   search falls back to the parser that runs in the browser and the review summary
+   shows a short note instead, so nothing breaks.
 
 5. Start the development server
 
@@ -201,22 +202,18 @@ To create a production build, run `npm run build` and preview it with `npm run p
 
 ## 🧾 About the checkout
 
-The checkout is a working front-end flow, not a real shop. It walks through delivery
-details, a payment method and a review screen, validates every field as a real form
-would, then confirms the order with an order number, an estimated delivery date and a
-summary of what was bought, and empties the cart.
+Checkout needs an account, so a guest is asked to sign in first and comes straight back
+with the cart. It walks through delivery details (filled in from the address saved on
+the account), a payment method and a review screen, validates every field the way the
+server does, then sends the order to `POST /api/orders`.
 
-Because it is a demonstration:
-
-- nothing is ever sent to a server, and there is no server to send it to
-- placed orders are kept in local storage and listed under Orders, where the status moves
-  from processing to on the way to delivered as the estimated delivery date approaches
-- a banner at the top of the page says so, and the card field warns against entering a
-  real card number
-- only the last four digits of the card are kept, and only in this browser's local
-  storage, so the confirmation can say "card ending 4242"
-- cash on delivery and UPI are offered too, so the flow can be demonstrated without
-  typing card details at all
+- The server prices every line itself and sets the stock aside. A line that sold out in
+  the meantime comes back marked, with a button to lower the quantity or remove it.
+- The order and its status history are saved to the account and listed under Orders,
+  where it can be cancelled while it is still processing.
+- ShopSmart is still a demo store: no payment is taken. For a card, only the last four
+  digits are sent with the order; the full number and the CVV never leave the page.
+  Cash on delivery and UPI are offered too.
 
 ## 📁 Project Structure
 
@@ -243,7 +240,6 @@ src/
 ├── hooks/
 │   ├── useDebounce.js
 │   ├── useLocalStorage.js
-│   ├── useOrders.js
 │   ├── usePageTitle.js
 │   └── useShoppingAssistant.js   the conversation, its memory and its answers
 ├── styles/
@@ -263,14 +259,16 @@ src/
 ├── services/
 │   ├── api.js                fetching and normalising products
 │   ├── fallbackProducts.js   offline snapshot of the catalogue
-│   └── gemini.js             Gemini query understanding with validation
+│   ├── ai.js                 the server's AI search and its status
+│   ├── orders.js             placing, reading and cancelling orders
+│   └── reviews.js            product reviews and their AI summary
 ├── utils/
 │   ├── checkoutValidation.js form validation and card formatting
 │   ├── filters.js            filtering, searching and sorting
 │   ├── format.js             price, date and text formatting
 │   ├── nlpSearch.js          natural language query parsing
 │   ├── orders.js             order status and payment summaries
-│   ├── pricePredict.js       price history and regression forecast
+│   ├── priceChart.js         the recorded prices and forecast as chart points
 │   ├── recommend.js          similarity and recommendations
 │   └── textIndex.js          TF-IDF index shared by search and recommendations
 ├── App.jsx
@@ -348,25 +346,20 @@ Tested and working on:
 
 ## 🐛 Known Issues
 
-- The price history behind the forecast is reconstructed from the discount data the API
-  provides, since no real historical prices are available. The regression is real; the
-  input series is derived.
-- Checkout is a demonstration. Orders are confirmed in the browser and never reach a
-  payment provider, which is the expected scope for a front-end only project.
+- The seeded weekly prices behind the forecast were generated from the catalogue's discount
+  data, since the source catalogue has no price history. Admin price changes add real
+  points from then on.
+- Checkout records the payment method but never reaches a payment provider: no payment
+  is taken.
 - Very broad natural language queries such as "something nice for my sister" have no
   filters to extract and fall back to keyword relevance alone.
 - The assistant answers from the catalogue it has. Asking for something the shop does not
   stock, such as a screen protector, returns the closest category it can rather than
   admitting there is no exact match.
-- Any API key used by a front-end application is visible in the built JavaScript, which
-  is a property of the stack rather than of this project. The Gemini key is kept out of
-  the repository in `.env.local`, and a key used for a public deployment should be
-  restricted to the deployed domain in the Google Cloud console and rotated if it leaks.
 
 ## 🔮 Future Enhancements
 
 - A MERN back end with real user accounts, so the cart, wishlist and conversation follow the user across devices
-- Real price history stored per product, which would replace the reconstructed series with actual data
 - Collaborative filtering once there is more than one user's behaviour to learn from
 - Voice search using the Web Speech API
 - Paginated or virtualised product loading for catalogues much larger than 194 items
