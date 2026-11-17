@@ -65,7 +65,7 @@ export function errorHandler(error, req, res, next) {
   // answer rather than a fault. Anything unrecognised is a bug and is logged in full.
   if (!apiError) {
     console.error(`[${req.method} ${req.originalUrl}]`, error)
-    if (env.nodeEnv === 'development') body.stack = error?.stack
+    if (env.isDevelopment) body.stack = error?.stack
   }
 
   res.status(status).json(body)

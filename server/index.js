@@ -23,6 +23,9 @@ async function start() {
       process.exit(1)
     }
     console.log(`ShopSmart API (${env.nodeEnv}) listening on http://localhost:${env.port}`)
+    if (!process.env.NODE_ENV) {
+      console.warn('NODE_ENV is not set. Set it to production on the host, or development on your own machine.')
+    }
   })
 
   function shutdown(signal) {

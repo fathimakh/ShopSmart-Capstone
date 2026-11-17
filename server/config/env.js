@@ -17,6 +17,16 @@ function toOriginList(value) {
     .filter(Boolean)
 }
 
+// Browsers send a bare lower case origin, so an entry with a path, without https:// or
+// with capitals would never match one.
+function isOrigin(value) {
+  try {
+    return new URL(value).origin === value
+  } catch {
+    return false
+  }
+}
+
 // "Admin@Shop.dev, demo@shop.dev" becomes ["admin@shop.dev", "demo@shop.dev"]
 function toEmailList(value) {
   return String(value || '')
@@ -26,6 +36,9 @@ function toEmailList(value) {
 }
 
 const nodeEnv = process.env.NODE_ENV || 'development'
+// The JWT_SECRET line in .env.example, which anyone reading the repository knows.
+const EXAMPLE_JWT_SECRET = 'change-me-to-a-long-random-string'
+const MIN_JWT_SECRET_LENGTH = 32
 const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@shopsmart.dev'
 const seedShopperEmail = 'demo@shopsmart.dev'
 
@@ -33,6 +46,9 @@ const env = {
   nodeEnv,
   isProduction: nodeEnv === 'production',
   isTest: nodeEnv === 'test',
+  // Request logs and stack traces in error answers need an explicit NODE_ENV=development
+  // (as in .env.example), so a host where NODE_ENV was left out never shows them.
+  isDevelopment: process.env.NODE_ENV === 'development',
   port: toInt(process.env.PORT, 5050),
   mongoUri: process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/shopsmart',
   jwtSecret: process.env.JWT_SECRET,
@@ -55,6 +71,27 @@ const env = {
 
 if (!env.jwtSecret) {
   throw new Error('JWT_SECRET is not set. Copy .env.example to .env and fill it in.')
+}
+
+// Anyone who knows or guesses the secret can sign a token for any account, the admin
+// included, so a deployed server refuses a short one or the example value.
+if (env.isProduction && (env.jwtSecret.length < MIN_JWT_SECRET_LENGTH || env.jwtSecret === EXAMPLE_JWT_SECRET)) {
+  throw new Error(
+    `JWT_SECRET must be a random string of at least ${MIN_JWT_SECRET_LENGTH} characters in production, not the ` +
+      '.env.example value. The command above it in .env.example makes one.'
+  )
+}
+
+// Without the site's origin every browser request fails CORS while the health check stays
+// green, so a deployed server will not start without a usable CLIENT_URL.
+if (env.isProduction) {
+  if (!process.env.CLIENT_URL?.trim()) {
+    throw new Error('CLIENT_URL is not set. In production it must list the site, such as https://shopsmart.onrender.com.')
+  }
+  const notAnOrigin = env.clientUrls.find((origin) => !isOrigin(origin))
+  if (notAnOrigin) {
+    throw new Error(`CLIENT_URL entry "${notAnOrigin}" is not an origin such as https://shopsmart.onrender.com (no path, lower case).`)
+  }
 }
 
 // A misspelt zone would otherwise only fail later, on the first dashboard request.

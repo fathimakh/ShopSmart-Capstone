@@ -28,6 +28,47 @@ function loadEnv(vars) {
 }
 
 describe('config/env.js', () => {
+  const production = { NODE_ENV: 'production', JWT_SECRET: LONG_SECRET, CLIENT_URL: 'https://shop.example.com' }
+
+  it('starts in production with a long secret and the site\'s origin', () => {
+    const { env, error } = loadEnv(production)
+    assert.equal(error, undefined)
+    assert.equal(env.isProduction, true)
+    assert.deepEqual(env.clientUrls, ['https://shop.example.com'])
+  })
+
+  it('refuses a short or published JWT secret in production', () => {
+    const placeholder = loadEnv({ ...production, JWT_SECRET: 'change-me-to-a-long-random-string' })
+    assert.match(placeholder.error, /JWT_SECRET must be a random string of at least 32 characters/)
+    const short = loadEnv({ ...production, JWT_SECRET: 'shopsmart-secret' })
+    assert.match(short.error, /JWT_SECRET must be/)
+
+    // On a developer's machine the example value is fine.
+    const local = loadEnv({ NODE_ENV: 'development', JWT_SECRET: 'change-me-to-a-long-random-string' })
+    assert.equal(local.error, undefined)
+  })
+
+  it('refuses a missing or malformed CLIENT_URL in production', () => {
+    // spawnSync leaves out variables whose value is undefined.
+    assert.match(loadEnv({ ...production, CLIENT_URL: undefined }).error, /CLIENT_URL is not set/)
+    assert.match(loadEnv({ ...production, CLIENT_URL: ' ' }).error, /CLIENT_URL is not set/)
+
+    for (const wrong of ['shop.example.com', 'https://shop.example.com/store', 'https://Shop.example.com']) {
+      assert.match(loadEnv({ ...production, CLIENT_URL: `https://ok.example.com, ${wrong}` }).error, /is not an origin/, wrong)
+    }
+    // A trailing slash is trimmed, so it is still the same origin.
+    assert.equal(loadEnv({ ...production, CLIENT_URL: 'https://shop.example.com/' }).error, undefined)
+  })
+
+  it('shows developer extras only when NODE_ENV is development', () => {
+    assert.equal(loadEnv({ NODE_ENV: 'development', JWT_SECRET: LONG_SECRET }).env.isDevelopment, true)
+
+    // A host that forgot NODE_ENV still runs, but never puts stack traces in its answers.
+    const unset = loadEnv({ JWT_SECRET: LONG_SECRET }).env
+    assert.equal(unset.isDevelopment, false)
+    assert.equal(unset.isProduction, false)
+  })
+
   it('treats the seeded accounts as the shared demo accounts unless told otherwise', () => {
     const seeded = loadEnv({ JWT_SECRET: LONG_SECRET, SEED_ADMIN_EMAIL: 'Boss@Shop.dev' })
     assert.deepEqual(seeded.env.demoAccountEmails, ['boss@shop.dev', 'demo@shopsmart.dev'])

@@ -1142,12 +1142,12 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `NODE_ENV` | `development` | `production` on the host. Request logging is on in development. |
+| `NODE_ENV` | `development` | `production` on the host. Only an explicit `development` (as in `.env.example`) logs each request and adds a `stack` to `500` answers. Left unset, the server runs as in development without those two, and warns at startup. |
 | `PORT` | `5050` | HTTP port. |
 | `MONGO_URI` | `mongodb://127.0.0.1:27017/shopsmart` | MongoDB connection string (local or Atlas). |
-| `JWT_SECRET` | none, required | Secret for signing tokens. The server will not start without it. |
+| `JWT_SECRET` | none, required | Secret for signing tokens. The server will not start without it, and in production not with fewer than 32 characters or with the `.env.example` value. |
 | `JWT_EXPIRES_IN` | `7d` | Token lifetime. |
-| `CLIENT_URL` | `http://localhost:3000` | Allowed browser origins, comma separated. |
+| `CLIENT_URL` | `http://localhost:3000` | Allowed browser origins, comma separated. Required in production, where each one must be a bare origin such as `https://shopsmart.onrender.com` (no path, lower case), or the server will not start. |
 | `AUTH_RATE_LIMIT_MAX` | `50` | Sign in requests per IP per 15 minutes. |
 | `AI_RATE_LIMIT_MAX` | `60` | AI requests per IP per 15 minutes. |
 | `GEMINI_API_KEY` | empty | Google Gemini key. Without it the AI endpoints answer `503 AI_UNAVAILABLE`. |

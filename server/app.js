@@ -42,7 +42,7 @@ app.set('trust proxy', 1)
 
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(cors(corsOptions))
-if (env.nodeEnv === 'development') app.use(morgan('dev'))
+if (env.isDevelopment) app.use(morgan('dev'))
 app.use(express.json({ limit: '1mb' }))
 app.use(sanitizeBody)
 
