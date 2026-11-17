@@ -1,0 +1,99 @@
+# Render Blueprint for ShopSmart: the Express API as a free Node web service and the
+# React client as a static site, both built from this repository.
+#
+# 1. MongoDB Atlas: create a free cluster and a database user, allow network access from
+#    0.0.0.0/0 (a free Render service has no fixed outgoing address), and copy the
+#    connection string with the database name in it:
+#      mongodb+srv://<user>:<password>@<cluster>.mongodb.net/shopsmart?retryWrites=true&w=majority
+# 2. Render dashboard -> New -> Blueprint -> this repository. Render asks once, while it
+#    creates the services, for every value marked sync: false:
+#      shopsmart-capstone-api  MONGO_URI       the Atlas connection string
+#                              CLIENT_URL      https://shopsmart-capstone-web.onrender.com
+#                              GEMINI_API_KEY  a Google AI Studio key, or empty for now
+#      shopsmart-capstone-web  VITE_API_URL    https://shopsmart-capstone-api.onrender.com/api
+#    Each service gets https://<name>.onrender.com, or that address with a suffix when
+#    the name is taken. Once both are live, check their real addresses against the two
+#    values above. Correct any that differ on the service's Environment page, then
+#    redeploy it (the site needs a new build, because Vite writes VITE_API_URL into it).
+#    GEMINI_API_KEY can be added later on the API's Environment page. Until then AI
+#    search answers on the device and the review summary is hidden.
+# 3. Seed Atlas once from your own computer. Free services have no shell and no one-off
+#    jobs, so the seed cannot run on Render.
+#      cd server
+#      npm ci
+#      cp .env.example .env   # only if server/.env does not exist; the seed needs JWT_SECRET
+#      MONGO_URI="<the Atlas connection string>" npm run seed
+#    The seed takes SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD from server/.env. Keep them at
+#    admin@shopsmart.dev and Admin@1234, which the sign in page's demo button uses.
+#    The demo orders are dated back from the moment the seed runs. Running the same
+#    command again before a demo brings them back into the dashboard's two week chart
+#    and keeps every other account and order, but replaces the products and reviews.
+# 4. Check https://<api>.onrender.com/api/health (it should say "db":"connected"), then
+#    open the site and use the demo sign in buttons. A free service sleeps after 15
+#    minutes without traffic and takes about a minute to wake; the site waits for it.
+services:
+  - type: web
+    name: shopsmart-capstone-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # The server will not start in production with a JWT_SECRET under 32 characters or
+      # without a CLIENT_URL.
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI # mongodb+srv://<user>:<password>@<cluster>.mongodb.net/shopsmart?retryWrites=true&w=majority
+        sync: false
+      - key: JWT_SECRET # 256 random bits, made by Render on the first deploy
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: CLIENT_URL # the site's bare origin, https://<site>.onrender.com (no path, no trailing slash); comma separate several
+        sync: false
+      # Sign in and sign up attempts per visitor address per 15 minutes. A class trying
+      # the demo from one network shares an address, so this is above the default 50.
+      - key: AUTH_RATE_LIMIT_MAX
+        value: "100"
+      - key: AI_RATE_LIMIT_MAX
+        value: "60"
+      - key: GEMINI_API_KEY # optional: without it AI search runs on the device and review summaries are hidden
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_TIMEOUT_MS
+        value: "9000"
+      # New review summaries a day for the whole server. AI search shares the key's daily
+      # request quota (shown in Google AI Studio), so keep this well under it.
+      - key: AI_SUMMARY_DAILY_MAX
+        value: "50"
+      - key: STORE_TIMEZONE
+        value: Asia/Kolkata
+      # The two seeded accounts behind the demo sign in buttons. Every visitor shares them,
+      # so the API will not change their password, sign them out everywhere, change their
+      # role or delete them.
+      - key: DEMO_ACCOUNT_EMAILS
+        value: admin@shopsmart.dev,demo@shopsmart.dev
+
+  - type: web
+    name: shopsmart-capstone-web
+    runtime: static
+    rootDir: client
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    routes:
+      - type: rewrite # every path serves the app, so /product/12 or /admin/orders works on refresh
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: VITE_API_URL # the API's address ending in /api: https://<api>.onrender.com/api
+        sync: false
