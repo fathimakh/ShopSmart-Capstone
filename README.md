@@ -19,7 +19,7 @@ dashboard, products, orders and accounts.
 | **Demo shopper** | `demo@shopsmart.dev` / `Demo@1234` (16 demo orders) |
 | **Demo admin** | `admin@shopsmart.dev` / `Admin@1234` |
 
-The sign in page has **Demo Shopper** and **Store Admin** buttons that sign in with these
+The sign-in page has **Demo Shopper** and **Store Admin** buttons that sign in with these
 accounts in one click. Every visitor shares them, so the API refuses to change their
 password, sign them out of every device, change their role or delete them. The API is set
 up for Render's free plan, which sleeps after 15 minutes without traffic. The first request
@@ -31,11 +31,11 @@ more than 5 seconds.
 
 ## From mini project to capstone
 
-The mini project (the first 32 commits of this repository, August 2026) was a front-end
-only React app. The browser fetched the DummyJSON catalogue, kept the cart, wishlist and
-placed orders in local storage, called Gemini directly with a key built into the JavaScript
-bundle, and rebuilt each product's price history from its discount. It was hosted on Netlify
-as a static site.
+The mini project (the first 32 commits of this repository, August 2026) was a front-end-only
+React app. The browser fetched the DummyJSON catalogue, kept the cart, wishlist and placed
+orders in local storage, called Gemini directly with a key built into the JavaScript bundle,
+and rebuilt each product's price history from its discount. It was hosted on Netlify as a
+static site.
 
 The capstone keeps the React front end, moves it into `client/`, and puts a real server
 behind it in `server/`:
@@ -56,16 +56,17 @@ behind it in `server/`:
 ## What it does
 
 **Shoppers** browse 194 products in 24 categories. The home page shows the day's biggest
-discounts, category tiles, the AI search box and "Recommended for you". Category pages and
-the shop grid have keyword search, price, rating and brand filters shown as removable chips,
-and sort orders for price, rating, popularity, newest and discount. A product page has the
-gallery, specifications, stock, the price outlook, reviews with the AI summary, and similar
-products. Shoppers can compare up to four products, keep a wishlist, and fill a cart that
-shows the discount savings and free delivery over $150. Checkout needs an account and has
-three steps: delivery (filled in from the account), payment (card, UPI or cash on delivery)
-and review. The order page shows a progress timeline, allows cancelling while the order is
-processing, and has a buy again button. The assistant page is a chat that turns a sentence
-into filters and keeps refining across turns.
+discounts, category tiles, the AI search box and, once the visitor has viewed, saved or
+carted a product, "Recommended for you". Category pages and the shop grid have keyword
+search, price, rating and brand filters shown as removable chips, and sort orders for price,
+rating, popularity, newest and discount. A product page has the gallery, specifications,
+stock, the price outlook, reviews with the AI summary, and similar products. Shoppers can
+compare up to four products, keep a wishlist, and fill a cart that shows the discount savings
+and free delivery from $150. Checkout needs an account and has three steps: delivery (filled
+in from the account), payment (card, UPI or cash on delivery) and review. The order page
+shows a progress timeline, allows cancelling while the order is processing, and has a buy
+again button. The assistant page is a chat that turns a sentence into filters and keeps
+refining across turns.
 
 **Admins** see a dashboard with revenue, orders waiting to ship, product and account counts,
 sales for the last 14 days (counted in the store's time zone), orders by status, low stock,
@@ -79,7 +80,7 @@ who opens `/admin` a "store admins only" panel.
 
 Two features use **Google Gemini** (`gemini-3.5-flash-lite`, set by `GEMINI_MODEL`) on the
 server. Two more are classic techniques written by hand, with no Gemini call: TF-IDF
-recommendations in the browser and a least squares price forecast on the server.
+recommendations in the browser and a least-squares price forecast on the server.
 
 ### 1. Natural language search (Gemini)
 
@@ -118,13 +119,13 @@ why the device stepped in.
 
 `GET /api/products/:id/review-summary` (`server/services/reviewSummary.js`) gives Gemini the
 newest 50 reviews of a product and asks for a verdict of one or two sentences with up to four
-pros and four cons. The reply has its own response schema and is checked by
-`toReviewSummary` (verdict at most 400 characters, each point at most 120). The summary is
-cached on the product with a SHA-256 fingerprint of the reviews it read, so Gemini is asked
-again only after a review is added, edited or deleted. Requests for the same product that
-arrive while a summary is being written share that one call. Without a key the client does
-not ask at all: the product page shows a quiet line saying the summary is not available, and
-the reviews are unaffected.
+pros and four cons. The reply has its own response schema and is checked by `toReviewSummary`
+(verdict at most 400 characters, each point at most 120). The summary is cached on the
+product with a SHA-256 fingerprint of all its reviews (each review's id and last change), so
+Gemini is asked again only after a review is added, edited or deleted. Requests for the same
+product that arrive while a summary is being written share that one call. Without a key the
+client does not ask at all: the product page shows a quiet line saying the summary is not
+available, and the reviews are unaffected.
 
 ### Keeping the key and the quota safe
 
@@ -136,9 +137,9 @@ the reviews are unaffected.
 
 | Limit | Setting | Local default | `render.yaml` |
 |---|---|---|---|
-| AI searches per visitor address per 15 minutes | `AI_RATE_LIMIT_MAX` | 60 | 60 |
-| New review summaries per visitor address per 15 minutes (counted apart from search; cached summaries do not count) | `AI_RATE_LIMIT_MAX` | 60 | 60 |
-| New review summaries per day for the whole server, from midnight UTC | `AI_SUMMARY_DAILY_MAX` | 100 | 50 |
+| AI searches per IP address per 15 minutes | `AI_RATE_LIMIT_MAX` | 60 | 60 |
+| New review summaries per IP address per 15 minutes (counted apart from search; cached summaries do not count) | `AI_RATE_LIMIT_MAX` | 60 | 60 |
+| Review summary requests sent to Gemini per day for the whole server, from midnight UTC (failed requests count; cached summaries do not) | `AI_SUMMARY_DAILY_MAX` | 100 | 50 |
 
 The daily cap keeps product browsing, or a script walking every product page, from using up
 the key's daily quota that AI search also needs.
@@ -155,18 +156,20 @@ the key's daily quota that AI search also needs.
 - **Recommended for you** on the home page: the products in the cart (weight 3), the
   wishlist (weight 2) and the recently viewed list (weight 1) are merged into one taste
   profile, recent ones counting more, and the closest products not seen yet are shown. For a
-  signed in shopper those lists come from the account.
+  signed-in shopper those lists come from the account. The row stays hidden until there is
+  at least one product in those lists, so a first visit, or the demo shopper straight after
+  a seed, sees it once a product has been opened, saved or carted.
 
 The same index ranks the assistant's matches by relevance to its keywords, so a rare word
 counts for more than a common one. It all runs over the catalogue the client has already
 loaded, with no server call.
 
-### 4. Price drop forecast (least squares regression, on the server)
+### 4. Price drop forecast (least-squares regression, on the server)
 
 `server/services/pricePredict.js` reads a product's recorded prices: twelve weekly prices
 from the seed plus a point for every admin price change (the latest 26 are kept). A price
 holds until the next change, so each week without one counts as a week at that price. A
-least squares line is fitted through the last twelve weeks against time and carried two
+least-squares line is fitted through the last twelve weeks against time and carried two
 weeks forward, kept within 40% of today's price. R squared becomes the confidence. The
 verdict is "likely to drop" or "likely to rise" when the confidence is at least 35 and the
 change at least 2%, otherwise "holding steady". With fewer than three points, or less than
@@ -187,8 +190,8 @@ flowchart LR
     subgraph Server["Express 5 API - server/"]
         API["routes and middleware<br/>helmet, CORS, rate limits,<br/>sanitizeBody, protect, authorize, validateBody"] --> C["controllers"]
         C --> M[("MongoDB<br/>users, products, orders,<br/>reviews, counters")]
-        C --> AI["services/gemini.js<br/>aiSearch, reviewSummary"]
-        C --> PP["services/pricePredict.js<br/>least squares forecast"]
+        C --> AI["services/aiSearch.js, reviewSummary.js<br/>via gemini.js"]
+        C --> PP["services/pricePredict.js<br/>least-squares forecast"]
     end
     AI -->|"generateContent<br/>JSON response schema"| G["Google Gemini API<br/>gemini-3.5-flash-lite"]
 ```
@@ -216,10 +219,10 @@ ShopSmart-Capstone/
 │   │   ├── context/             AuthContext, CatalogContext, ShopContext
 │   │   ├── hooks/               the assistant conversation, admin data loading, debounce, route focus
 │   │   ├── pages/               shop, checkout, orders and account pages; admin/ for the admin pages
-│   │   ├── services/            http.js (the one API client), products, orders, reviews, AI, admin
+│   │   ├── services/            http.js (the one API client), api.js (catalogue, price history), orders, reviews, ai, adminApi, adminRules
 │   │   ├── utils/               filters, nlpSearch, textIndex, recommend, priceChart, checkout validation
 │   │   ├── styles/, test/       shared browse styles, test setup and fakes
-│   │   └── App.jsx, main.jsx, index.css
+│   │   └── App.jsx, App.css, main.jsx, index.css
 │   ├── public/                  favicon and the Netlify _redirects file
 │   ├── vite.config.js           dev server on port 3000, the /api proxy, Vitest settings
 │   ├── netlify.toml, vercel.json   SPA rewrites kept from the mini project
@@ -227,7 +230,7 @@ ShopSmart-Capstone/
 ├── server/                      Node.js + Express 5 + MongoDB API
 │   ├── index.js, app.js         start-up and the Express app
 │   ├── config/                  env.js (settings and start-up checks), db.js
-│   ├── routes/, controllers/    auth, products, reviews, lists, orders, AI, admin, users
+│   ├── routes/, controllers/    routes: auth, products (with reviews and price history), lists, orders, AI, admin, users; controllers: the same plus reviews
 │   ├── middleware/              auth (protect, authorize), rate limits, body sanitising, validation, errors
 │   ├── models/                  User, Product, Order, Review, Counter
 │   ├── validators/              request rules for each area
@@ -338,16 +341,16 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 | `MONGO_URI` | Local: `mongodb://127.0.0.1:27017/shopsmart`<br>Render: asked for at creation | MongoDB connection string with the database name |
 | `JWT_SECRET` | Local: an example value<br>Render: generated by Render | Signs the tokens. In production the server will not start with fewer than 32 characters or the example value |
 | `JWT_EXPIRES_IN` | Local: `7d`<br>Render: `7d` | Token lifetime |
-| `CLIENT_URL` | Local: `http://localhost:3000`<br>Render: asked for at creation | Allowed browser origins, comma separated. In production it is required and each entry must be a bare origin such as `https://shopsmart-capstone-web.onrender.com` (no path, no trailing slash, lower case). In development any localhost port is allowed too |
-| `AUTH_RATE_LIMIT_MAX` | Local: `50`<br>Render: `100` | Sign in, sign up and password change attempts per visitor address per 15 minutes |
-| `AI_RATE_LIMIT_MAX` | Local: `60`<br>Render: `60` | AI searches, and separately new review summaries, per visitor address per 15 minutes |
-| `AI_SUMMARY_DAILY_MAX` | Local: `100`<br>Render: `50` | New review summaries per day for the whole server |
-| `GEMINI_API_KEY` | Local: empty<br>Render: asked for at creation, may stay empty | Google Gemini key. Without it the AI endpoints answer `503 AI_UNAVAILABLE` |
+| `CLIENT_URL` | Local: `http://localhost:3000`<br>Render: asked for at creation | Allowed browser origins, comma separated. In production it is required and each entry must be a bare origin such as `https://shopsmart-capstone-web.onrender.com` (scheme and host only, no path, lower case; a trailing slash is removed). In development any localhost port is allowed too |
+| `AUTH_RATE_LIMIT_MAX` | Local: `50`<br>Render: `100` | Sign in, sign up and password change attempts per IP address per 15 minutes (one shared budget) |
+| `AI_RATE_LIMIT_MAX` | Local: `60`<br>Render: `60` | AI searches, and separately new review summaries, per IP address per 15 minutes |
+| `AI_SUMMARY_DAILY_MAX` | Local: `100`<br>Render: `50` | Review summary requests to Gemini per day for the whole server (failed requests count) |
+| `GEMINI_API_KEY` | Local: empty<br>Render: asked for at creation, may stay empty | Google Gemini key. Without it `POST /api/ai/search` and new review summaries answer `503 AI_UNAVAILABLE`, and `GET /api/ai/status` says `enabled: false` |
 | `GEMINI_MODEL` | Local: `gemini-3.5-flash-lite`<br>Render: `gemini-3.5-flash-lite` | Gemini model. `gemini-2.5-flash`, the earlier choice, only serves accounts that used it before and shuts down on 1 December 2026 |
 | `GEMINI_TIMEOUT_MS` | Local: `9000`<br>Render: `9000` | How long to wait for Gemini before `504 AI_TIMEOUT` |
 | `STORE_TIMEZONE` | Local: `Asia/Kolkata`<br>Render: `Asia/Kolkata` | Time zone of the dashboard's daily sales |
 | `DEMO_ACCOUNT_EMAILS` | Local: not set, which means the seeded admin and `demo@shopsmart.dev`<br>Render: the same two, listed | Shared demo accounts the API locks against password change, sign out everywhere, role change and deletion. An empty value turns the lock off |
-| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Local: `admin@shopsmart.dev`, `Admin@1234`<br>Render: not set, as the seed runs from a local machine | The admin account `npm run seed` creates. Keep these values: the sign in page's Store Admin button uses them |
+| `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Local: `admin@shopsmart.dev`, `Admin@1234`<br>Render: not set, as the seed runs from a local machine | The admin account `npm run seed` creates. Keep these values: the sign-in page's Store Admin button uses them |
 | `TEST_MONGO_BASE_URI` | Local: not set, which means `mongodb://127.0.0.1:27017`<br>Render: not set | The MongoDB `npm test` uses. Never taken from `MONGO_URI` |
 
 **Client** (`client/.env.local`, or the static site's environment)
@@ -420,9 +423,9 @@ Checked in a browser with Playwright against a freshly seeded database:
 ## API
 
 The full reference is [`docs/API.md`](docs/API.md): every endpoint with its fields, answers
-and error codes, the objects, the rate limits and the server settings. Every endpoint lives
-under `/api`. Success answers have `success: true`; errors have
-`{ success: false, message, code }`, plus `errors` with one entry per invalid field.
+and error codes, the objects, the rate limits and the server settings. Every endpoint apart
+from the `GET /` pointer lives under `/api`. Success answers have `success: true`; errors
+have `{ success: false, message, code }`, plus `errors` with one entry per invalid field.
 
 | Area | Endpoints | Access |
 |---|---|---|
@@ -432,7 +435,7 @@ under `/api`. Success answers have `success: true`; errors have
 | Product editing | `POST /api/products`, `PUT /api/products/:id`, `DELETE /api/products/:id` | Admin |
 | Price history | `GET /api/products/:id/price-history` | Public |
 | Reviews | `GET`, `POST /api/products/:id/reviews`, `DELETE /api/products/:id/reviews/:reviewId`, `GET /api/products/:id/review-summary` | Reading is public; writing needs an account; authors and admins delete |
-| AI search | `GET /api/ai/status`, `POST /api/ai/search` | Public, rate limited |
+| AI search | `GET /api/ai/status`, `POST /api/ai/search` | Public; search is rate limited |
 | Saved lists | `GET /api/lists`, `PUT /api/lists/cart`, `/wishlist`, `/viewed`, `POST /api/lists/merge` | Signed in |
 | Orders | `POST /api/orders`, `GET /api/orders/mine`, `GET /api/orders/:ref`, `PATCH /api/orders/:ref/cancel` | Signed in (own orders) |
 | Order management | `GET /api/orders`, `PATCH /api/orders/:ref/status` | Admin |
@@ -539,7 +542,7 @@ Render setup has been checked.
   and stock is reserved with an update that only succeeds while enough units are left.
 - **No card numbers are stored.** For a card the client sends only the last four digits; the
   full number and the CVV never leave the page. No payment is taken.
-- **Rate limits** per visitor address: sign in, sign up and password change share one budget
+- **Rate limits** per IP address: sign in, sign up and password change share one budget
   (`AUTH_RATE_LIMIT_MAX`), and AI search and review summaries have their own.
 - **CORS** allows only the `CLIENT_URL` origins in production. Helmet sets the security
   headers. `500` answers carry a generic message, with a stack trace only in development.
@@ -557,12 +560,12 @@ Render setup has been checked.
 | Authentication | JWT (`server/utils/generateToken.js`, `server/middleware/auth.js`), bcrypt (`server/models/user.js`), sign in and sign up pages, `client/src/context/AuthContext.jsx` |
 | Authorisation and business logic | Admin role (`authorize('admin')`, `ProtectedRoute`), checkout pricing and stock reservation (`createOrder` in `server/controllers/orderController.js`), status steps, one review per product with verified purchases and a blended rating, the demo account lock |
 | Backend CRUD, tested | Products, orders, reviews, saved lists and accounts; 150 API tests in `server/tests/` |
-| Frontend consumes the API | `client/src/services/http.js` and the services beside it: catalogue, session, lists, orders, reviews, price history, AI and admin |
+| Frontend consumes the API | `client/src/services/http.js`, used by the service files (catalogue, price history, orders, reviews, AI, admin) and by the auth and shop contexts (session, saved lists) |
 | At least one AI tool, matched to the domain | Google Gemini API: natural language product search and review summaries (`server/services/`). Also TF-IDF recommendations and a regression price forecast |
-| A working, visible AI feature | Assistant page, AI search box, review summary panel, "Recommended for you", "Similar products", price outlook. Gemini needs `GEMINI_API_KEY` on the server; without it the on-device parser answers, so the search always responds |
+| A working, visible AI feature | Assistant page, AI search box, review summary panel, "Recommended for you" (appears after viewing a product), "Similar products", price outlook. Gemini needs `GEMINI_API_KEY` on the server; without it the on-device parser answers, so the search always responds |
 | Deploy both frontend and backend | `render.yaml`: API web service + static site, with MongoDB Atlas. Live links are added at the top after the first deploy |
 | Fully documented deployment process | "Deployment" above, the comments in `render.yaml`, both `.env.example` files |
-| Public GitHub repository with consistent commits | Every change is its own commit with a plain message, starting from the mini project's 32. The repository is pushed to GitHub before the first deploy |
+| Public GitHub repository with consistent commits | Not public yet: the repository (planned name fathimakh/ShopSmart-Capstone) is created and pushed before the first deploy. History: the mini project's 32 commits, then one commit per capstone change with a plain message |
 | Responsive UI, accessible design, clean code | Checked at 375, 768 and 1920 px; bottom navigation on phones; skip link, focus moved to each new page, labelled fields, named icon buttons; one folder per component, a single API client, shared validation rules |
 | Documentation for submission | This README, [`docs/API.md`](docs/API.md), the screenshots, the demo accounts |
 | *Module 5 rubric:* MERN integration workflow | Vite proxy in development; `VITE_API_URL` and `CLIENT_URL` in production; see "Architecture" |
@@ -576,10 +579,11 @@ Render setup has been checked.
 
 ## Known limitations
 
-- **Gemini needs a key.** None is configured yet. Until `GEMINI_API_KEY` is set on the server,
-  AI search answers with the on-device parser (and says so) and the review summary is hidden.
-  Google's [rate limit page](https://ai.google.dev/gemini-api/docs/rate-limits) sends readers
-  to AI Studio for a key's actual limits, so `AI_SUMMARY_DAILY_MAX=50` in `render.yaml` is a
+- **Gemini needs a key.** None is configured yet. Until `GEMINI_API_KEY` is set on the
+  server, AI search answers with the on-device parser (and says so) and a short note takes
+  the place of the review summary. Google's
+  [rate limit page](https://ai.google.dev/gemini-api/docs/rate-limits) sends readers to AI
+  Studio for a key's actual limits, so `AI_SUMMARY_DAILY_MAX=50` in `render.yaml` is a
   cautious guess to check once a key exists. The tests replace Gemini with a stub, so the
   calls to `gemini-3.5-flash-lite` have not yet been run against a real key.
 - **`"ai":true` only means a key is set.** `/api/health` and `GET /api/ai/status` do not call
@@ -640,7 +644,7 @@ assistant and the review summary show their on-device and no-key states.
 
 | | |
 |---|---|
-| ![Admin dashboard](docs/screenshots/14-admin-dashboard.jpg) Dashboard with the demo orders in the 14-day sales chart | ![Admin products](docs/screenshots/15-admin-products.jpg) Products: search, category, stock filter and sort |
+| ![Admin dashboard](docs/screenshots/14-admin-dashboard.jpg) Dashboard with the demo orders in the 14-day sales chart, taken after the walkthrough order `SS100017`, so its 17 orders and $1,844.39 are one order above a fresh seed's 16 orders and $1,444.41 | ![Admin products](docs/screenshots/15-admin-products.jpg) Products: search, category, stock filter and sort |
 | ![Admin product edit](docs/screenshots/16-admin-product-edit.jpg) Editing a product beside its recorded price history and forecast | ![Admin orders](docs/screenshots/17-admin-orders.jpg) Every order, with status and payment |
 | ![Admin order status](docs/screenshots/18-admin-order-status.jpg) An order marked as shipped with a courier note; Delivered or Cancelled come next | ![Admin accounts](docs/screenshots/19-admin-users.jpg) Accounts with role and order count |
 
