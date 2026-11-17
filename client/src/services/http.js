@@ -14,6 +14,9 @@ export const TOKEN_KEY = 'shopsmart:token'
 
 // A free hosted server can sleep and take a while to answer its first request.
 export const DEFAULT_TIMEOUT = 20000
+// Waking a sleeping free-tier server takes up to a minute, so the requests a visit starts
+// with (the catalogue, the session check, signing in) wait that long before giving up.
+export const WAKE_UP_TIMEOUT = 60000
 
 /**
  * 401 codes meaning the token this browser holds no longer works. NO_TOKEN only counts

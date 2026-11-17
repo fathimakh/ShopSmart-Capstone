@@ -10,7 +10,7 @@ import './AccountNotices.css'
  * The live region is always rendered so screen readers announce notes as they arrive.
  */
 function AccountNotices() {
-  const { status, sessionNotice, clearSessionNotice, retrySession } = useAuth()
+  const { status, restoreError, sessionNotice, clearSessionNotice, retrySession } = useAuth()
   const { listsStatus, listsError, retryListsSync } = useShop()
   const location = useLocation()
 
@@ -43,7 +43,8 @@ function AccountNotices() {
           <FiAlertTriangle aria-hidden="true" />
           <p>
             <strong>We could not check your sign in. </strong>
-            Your account features will be back once the server answers.
+            {restoreError ? `${restoreError.message} ` : ''}
+            Your account features come back once the check works.
           </p>
           <div className="account-notice-actions">
             <button type="button" className="btn btn-outline" onClick={retrySession}>

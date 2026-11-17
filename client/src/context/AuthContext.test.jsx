@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { AuthProvider, useAuth } from './AuthContext'
 import { TOKEN_KEY, api, getToken, setToken } from '../services/http'
-import { fakeApi, fakeToken } from '../test/fakeApi'
+import { fakeApi, fakeToken, jsonResponse } from '../test/fakeApi'
 
 const shopper = {
   _id: '6afb790454cff2253a63b03a',
@@ -72,6 +72,50 @@ describe('AuthContext', () => {
 
     reachable = true
     act(() => result.current.retrySession())
+    await waitFor(() => expect(result.current.status).toBe('signed-in'))
+  })
+
+  it('waits up to a minute for a sleeping server before giving up on a stored session', async () => {
+    setToken(validToken)
+    let answer
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        (url, init) =>
+          new Promise((resolve, reject) => {
+            answer = resolve
+            init.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+          })
+      )
+    )
+    vi.useFakeTimers()
+    try {
+      const { result } = renderAuth()
+      // Longer than an ordinary request waits, as long as a free server takes to wake.
+      await act(() => vi.advanceTimersByTimeAsync(45000))
+      expect(result.current.status).toBe('checking')
+
+      await act(async () => answer(jsonResponse(200, { success: true, user: shopper })))
+      expect(result.current.status).toBe('signed-in')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('checks the stored session again when the connection comes back', async () => {
+    setToken(validToken)
+    let reachable = false
+    fakeApi({
+      'GET /auth/me': () =>
+        reachable ? [200, { success: true, user: shopper }] : [503, { success: false, message: 'Down', code: 'SERVER_ERROR' }]
+    })
+    const { result } = renderAuth()
+    await waitFor(() => expect(result.current.status).toBe('error'))
+
+    reachable = true
+    act(() => {
+      window.dispatchEvent(new Event('online'))
+    })
     await waitFor(() => expect(result.current.status).toBe('signed-in'))
   })
 

@@ -1,9 +1,5 @@
 import { titleCase } from '../utils/format'
-import { api } from './http'
-
-// The first request of a visit can wake a sleeping free-tier server, which takes up to a
-// minute, so the catalogue waits longer than an ordinary request before giving up.
-const CATALOGUE_TIMEOUT = 60000
+import { WAKE_UP_TIMEOUT, api } from './http'
 
 // The API returns the already discounted price, so the pre-discount figure has to be
 // rebuilt to show a struck-through original price on the card. The server uses the same
@@ -60,7 +56,8 @@ export function normalizeProduct(raw) {
 
 /** The whole catalogue in one request, the way the storefront filters it on the device. */
 export async function fetchProducts({ signal } = {}) {
-  const data = await api.get('/products?limit=0', { signal, timeout: CATALOGUE_TIMEOUT })
+  // Usually the first request of a visit, so it may have to wait for the server to wake.
+  const data = await api.get('/products?limit=0', { signal, timeout: WAKE_UP_TIMEOUT })
   return data.products.map(normalizeProduct)
 }
 

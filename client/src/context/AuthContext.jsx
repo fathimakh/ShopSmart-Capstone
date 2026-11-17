@@ -1,5 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { TOKEN_KEY, api, getToken, isAbortError, onSessionEnd, setToken } from '../services/http'
+import {
+  TOKEN_KEY,
+  WAKE_UP_TIMEOUT,
+  api,
+  getToken,
+  isAbortError,
+  onSessionEnd,
+  setToken
+} from '../services/http'
 import { getTokenExpiry } from '../utils/jwt'
 
 const AuthContext = createContext(null)
@@ -55,8 +63,9 @@ export function AuthProvider({ children }) {
     if (status !== 'checking') return undefined
     const controller = new AbortController()
 
+    // A returning visitor's first request may have to wake the server, like the catalogue's.
     api
-      .get('/auth/me', { signal: controller.signal })
+      .get('/auth/me', { signal: controller.signal, timeout: WAKE_UP_TIMEOUT })
       .then((data) => {
         setUser(data.user)
         setStatus('signed-in')
@@ -73,6 +82,14 @@ export function AuthProvider({ children }) {
 
     return () => controller.abort()
   }, [status, endSession])
+
+  // A check that failed because the connection dropped is tried again once it is back.
+  useEffect(() => {
+    if (status !== 'error') return undefined
+    const retry = () => setStatus('checking')
+    window.addEventListener('online', retry)
+    return () => window.removeEventListener('online', retry)
+  }, [status])
 
   // Any request that proves the token is dead ends the session, wherever it was made.
   useEffect(
@@ -130,7 +147,11 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(
     async ({ email, password }) => {
-      const data = await api.post('/auth/login', { email, password }, { auth: false })
+      const data = await api.post(
+        '/auth/login',
+        { email, password },
+        { auth: false, timeout: WAKE_UP_TIMEOUT }
+      )
       startSession(data.token, data.user)
       return data.user
     },
@@ -139,7 +160,11 @@ export function AuthProvider({ children }) {
 
   const register = useCallback(
     async ({ name, email, password }) => {
-      const data = await api.post('/auth/register', { name, email, password }, { auth: false })
+      const data = await api.post(
+        '/auth/register',
+        { name, email, password },
+        { auth: false, timeout: WAKE_UP_TIMEOUT }
+      )
       startSession(data.token, data.user)
       return data.user
     },
