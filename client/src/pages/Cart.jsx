@@ -6,11 +6,9 @@ import { useAuth } from '../context/AuthContext'
 import QuantityStepper from '../components/QuantityStepper/QuantityStepper'
 import EmptyState from '../components/EmptyState/EmptyState'
 import { formatPrice, pluralize } from '../utils/format'
+import { DELIVERY_FEE, FREE_DELIVERY_THRESHOLD } from '../utils/orders'
 import './Cart.css'
 import usePageTitle from '../hooks/usePageTitle'
-
-const DELIVERY_FEE = 4.99
-const FREE_DELIVERY_THRESHOLD = 150
 
 function Cart() {
   usePageTitle('Shopping cart')

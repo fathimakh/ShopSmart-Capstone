@@ -136,15 +136,6 @@
   color: var(--color-muted);
 }
 
-.ai-search-thinking {
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background-color: var(--color-primary-soft);
-  color: var(--color-primary);
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
 .ai-search-clear {
   margin-left: auto;
   padding: var(--space-1) var(--space-2);

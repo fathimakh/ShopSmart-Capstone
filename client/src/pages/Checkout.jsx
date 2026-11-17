@@ -19,7 +19,13 @@ import RetryNotice from '../components/RetryNotice/RetryNotice'
 import { placeOrder as sendOrder } from '../services/orders'
 import { availabilityFor } from '../services/api'
 import { formatPrice, pluralize } from '../utils/format'
-import { buildOrderRequest, checkoutErrors, stockProblems } from '../utils/orders'
+import {
+  DELIVERY_FEE,
+  FREE_DELIVERY_THRESHOLD,
+  buildOrderRequest,
+  checkoutErrors,
+  stockProblems
+} from '../utils/orders'
 import {
   deliveryFromAccount,
   digitsOnly,
@@ -29,11 +35,6 @@ import {
   validatePayment
 } from '../utils/checkoutValidation'
 import './Checkout.css'
-
-// The same rule the server prices with (server/models/order.js); the order it returns
-// carries the final figures.
-const DELIVERY_FEE = 4.99
-const FREE_DELIVERY_THRESHOLD = 150
 
 // Failures where the order may still have reached the server before the answer was lost.
 const UNCERTAIN_CODES = ['TIMEOUT', 'NETWORK_ERROR']

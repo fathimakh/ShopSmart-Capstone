@@ -29,8 +29,13 @@ export function canCancel(order) {
 }
 
 export function orderItemCount(order) {
-  return order.items.reduce((total, item) => total + item.quantity, 0)
+  return (order.items || []).reduce((total, item) => total + item.quantity, 0)
 }
+
+// The same rule the server prices with (server/models/order.js). The cart and checkout
+// only preview it; the order the server returns carries the final figures.
+export const DELIVERY_FEE = 4.99
+export const FREE_DELIVERY_THRESHOLD = 150
 
 /** When the order reached a status, read from its history. null if it never did. */
 export function statusDate(order, status) {

@@ -3,6 +3,10 @@
  * be tested on their own. They mirror server/validators and docs/API.md; the server still
  * checks everything, and its field errors are shown when the two ever disagree.
  */
+import { paymentSummary } from '../utils/orders'
+
+// The order helpers the shop's own order pages use, so both describe an order alike.
+export { orderItemCount } from '../utils/orders'
 
 export const ORDER_STATUSES = ['processing', 'shipped', 'delivered', 'cancelled']
 
@@ -49,22 +53,9 @@ export function nextStatuses(status) {
   return NEXT_STATUSES[status] || []
 }
 
-export const paymentLabels = {
-  card: 'Card',
-  upi: 'UPI',
-  cod: 'Cash on delivery'
-}
-
+/** An order's payment as one line, for example "Card ending 4242". */
 export function describePayment(payment) {
-  if (!payment) return 'Not recorded'
-  const label = paymentLabels[payment.method] || payment.method
-  if (payment.method === 'card' && payment.cardLast4) return `${label} ending ${payment.cardLast4}`
-  if (payment.method === 'upi' && payment.upiId) return `${label} (${payment.upiId})`
-  return label
-}
-
-export function orderItemCount(order) {
-  return (order.items || []).reduce((total, item) => total + item.quantity, 0)
+  return paymentSummary({ payment })
 }
 
 // Products below this many units are "Low Stock" on the server (models/product.js).
