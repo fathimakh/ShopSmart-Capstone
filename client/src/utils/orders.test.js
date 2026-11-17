@@ -153,13 +153,20 @@ describe('order request', () => {
         { id: 1, quantity: 2 },
         { id: 6, quantity: 1 }
       ],
-      delivery: { ...delivery, name: 'Demo Shopper' },
+      delivery: { ...delivery, name: 'Demo Shopper', phone: '9876543210' },
       payment: { method: 'card', cardLast4: '4242' }
     })
     const sent = JSON.stringify(body)
     expect(sent).not.toContain('4111')
     expect(sent).not.toContain('123')
     expect(sent).not.toContain('12/29')
+  })
+
+  it('sends only the digits of a phone number and PIN code the form accepted', () => {
+    const typed = { ...delivery, phone: '(987) 654-3210', pincode: '682-001' }
+    const body = buildOrderRequest(cartItems, typed, { method: 'cod' })
+    expect(body.delivery.phone).toBe('9876543210')
+    expect(body.delivery.pincode).toBe('682001')
   })
 
   it('sends the UPI ID for UPI and nothing else for cash on delivery', () => {

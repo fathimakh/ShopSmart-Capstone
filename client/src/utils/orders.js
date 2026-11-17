@@ -127,11 +127,13 @@ export function buildOrderRequest(cartItems, delivery, payment) {
     delivery: {
       name: delivery.name.trim(),
       email: delivery.email.trim(),
-      phone: delivery.phone.trim(),
+      // Only the digits go: the form accepts '(987) 654-3210' or '682-001', which the
+      // server's stricter patterns would refuse after the payment step.
+      phone: digits(delivery.phone),
       address: delivery.address.trim(),
       city: delivery.city.trim(),
       state: delivery.state.trim(),
-      pincode: delivery.pincode.trim()
+      pincode: digits(delivery.pincode)
     },
     payment: { method: payment.method }
   }
