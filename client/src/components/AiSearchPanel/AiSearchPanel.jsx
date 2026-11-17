@@ -1,14 +1,8 @@
 import { useState } from 'react'
 import { FiCornerDownLeft, FiCpu, FiX, FiZap } from 'react-icons/fi'
 import { describeEngine } from '../../utils/aiSearch'
+import { SEARCH_EXAMPLES } from '../../utils/assistantPrompts'
 import './AiSearchPanel.css'
-
-const examples = [
-  'wireless headphones under $50 rated above 4',
-  'cheapest samsung smartphone',
-  'top rated laptops around $1200',
-  'womens bags on sale'
-]
 
 function AiSearchPanel({ onSearch, onClear, chips, summary, source, fallbackReason, resultCount }) {
   const [value, setValue] = useState('')
@@ -93,7 +87,7 @@ function AiSearchPanel({ onSearch, onClear, chips, summary, source, fallbackReas
         <div className="ai-search-examples">
           <p>Try:</p>
           <ul>
-            {examples.map((example) => (
+            {SEARCH_EXAMPLES.map((example) => (
               <li key={example}>
                 <button type="button" onClick={() => runSearch(example)}>
                   {example}

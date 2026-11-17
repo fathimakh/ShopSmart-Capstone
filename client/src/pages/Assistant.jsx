@@ -7,17 +7,10 @@ import usePageTitle from '../hooks/usePageTitle'
 import ProductCard from '../components/ProductCard/ProductCard'
 import { pluralize } from '../utils/format'
 import { describeEngine } from '../utils/aiSearch'
+import { ASSISTANT_FOLLOW_UPS, ASSISTANT_OPENERS } from '../utils/assistantPrompts'
 import { getAiStatus } from '../services/ai'
 import './Assistant.css'
 
-const openers = [
-  'wireless headphones under $50 rated above 4',
-  'my phone screen keeps cracking, what should I get',
-  'gift for my wife who loves perfume, up to 150',
-  'best rated laptop for college, budget around 900'
-]
-
-const followUps = ['show cheaper options', 'only the top rated ones', 'what about newest arrivals']
 
 function Assistant() {
   usePageTitle('Shopping assistant')
@@ -121,7 +114,7 @@ function Assistant() {
           <div className="assistant-empty">
             <p>Ask me anything about the catalogue. For example:</p>
             <ul>
-              {openers.map((opener) => (
+              {ASSISTANT_OPENERS.map((opener) => (
                 <li key={opener}>
                   <button type="button" onClick={() => ask(opener)}>
                     {opener}
@@ -212,7 +205,7 @@ function Assistant() {
 
       {messages.length && !isThinking ? (
         <ul className="assistant-followups">
-          {followUps.map((followUp) => (
+          {ASSISTANT_FOLLOW_UPS.map((followUp) => (
             <li key={followUp}>
               <button type="button" onClick={() => ask(followUp)}>
                 {followUp}

@@ -68,12 +68,15 @@ const RATING_RULES = [
     apply: (match) => Number(match[1])
   },
   { pattern: /(\d(?:\.\d)?)\s*\+?\s*stars?/i, apply: (match) => Number(match[1]) },
-  { pattern: /top rated|best rated|highest rated|highly rated|well reviewed|great reviews/i, apply: () => 4.5 },
+  // "Top rated" also sorts the best rated first (SORT_RULES), so a 4 star floor is enough.
+  // A higher one empties most answers on a catalogue this size, for example the
+  // follow-up "only the top rated ones" after headphones under $50.
+  { pattern: /top rated|best rated|highest rated|highly rated|well reviewed|great reviews/i, apply: () => 4 },
   { pattern: /good reviews|good rating|decent rating|reliable/i, apply: () => 4 }
 ]
 
 const SORT_RULES = [
-  { pattern: /cheapest|lowest price|least expensive|most affordable/i, sortBy: 'price-asc' },
+  { pattern: /cheapest|cheaper|lowest price|least expensive|less expensive|most affordable/i, sortBy: 'price-asc' },
   { pattern: /most expensive|highest price|premium|luxury/i, sortBy: 'price-desc' },
   { pattern: /top rated|best rated|highest rated|highly rated/i, sortBy: 'rating' },
   { pattern: /popular|trending|best selling|bestseller|most reviewed/i, sortBy: 'popularity' },
@@ -176,7 +179,9 @@ export function parseQuery(query, { categories = [], brands = [] } = {}) {
     result.sortBy = sortRule.sortBy
   }
 
-  result.filters.categories = matchCategories(text, categories)
+  // Read from what the price and rating rules left, so "top rated" cannot also pick
+  // the shirts and tops category through its "top".
+  result.filters.categories = matchCategories(remaining, categories)
   result.filters.brands = matchBrands(text, brands)
 
   const consumedWords = new Set(
@@ -185,7 +190,8 @@ export function parseQuery(query, { categories = [], brands = [] } = {}) {
       'rating', 'stars', 'star', 'reviews', 'popular', 'trending', 'newest', 'latest', 'deal',
       'deals', 'offer', 'offers', 'sale', 'discount', 'discounted', 'under', 'below', 'above',
       'over', 'between', 'around', 'about', 'price', 'budget', 'looking', 'need', 'find', 'buy',
-      'something', 'anything', 'products', 'product', 'items', 'item'
+      'something', 'anything', 'products', 'product', 'items', 'item', 'cheaper', 'only', 'ones',
+      'options', 'option', 'arrival', 'arrivals'
     ])
   )
 
@@ -249,12 +255,20 @@ export function rankByRelevance(products, index, keywords) {
   return pool.sort((a, b) => b.score - a.score).map((entry) => entry.product)
 }
 
+function sameCategories(a, b) {
+  return a.length === b.length && a.every((category) => b.includes(category))
+}
+
 /**
  * Applies a follow-up on top of the previous request. Anything the shopper did not
  * mention again is carried over, which is what makes "cheaper ones" behave sensibly.
+ * A message that names a different category is a new question, so it starts afresh
+ * rather than inheriting a price or rating meant for something else.
  */
 export function mergeWithPrevious(parsed, previousFilters) {
   if (!previousFilters) return parsed
+  const { categories } = parsed.filters
+  if (categories.length && !sameCategories(categories, previousFilters.categories)) return parsed
 
   const merged = { ...parsed.filters }
 
