@@ -35,7 +35,7 @@ This document is the contract between the API and the React client. Everything b
 | Local development | `http://localhost:5050/api` |
 | Deployed | `https://<api-host>/api` |
 
-Every path in this document is relative to the host, and every endpoint lives under `/api`. The client should read the base URL from `VITE_API_URL` (including the `/api` suffix).
+Every path in this document is relative to the host, and every endpoint apart from the `GET /` pointer (5.1) lives under `/api`. The client should read the base URL from `VITE_API_URL` (including the `/api` suffix).
 
 To run it locally (Node.js 22 or later): `cd server`, `npm install`, copy `.env.example` to `.env` and fill it in, `npm run seed` (194 products, 582 reviews, two demo accounts and 16 orders the demo shopper placed over the last 13 days), then `npm run dev`. Running the seed again replaces the products and reviews and dates the demo orders back from the new run, so the dashboard's two week chart shows them again, but keeps every other account and order: each product's `soldCount` and reserved stock follow the kept orders, and product ids are never reused. `npm run seed -- --fresh` also removes every account and order first, and order numbers start again at `SS100001`.
 
@@ -138,7 +138,7 @@ Counted per IP address over 15 minutes. Going over answers `429 RATE_LIMITED`.
 | AI search | `POST /api/ai/search` | 60 (`AI_RATE_LIMIT_MAX`) |
 | Review summaries | `GET /api/products/:id/review-summary`, only when a new summary has to be written (cached summaries do not count). Counted apart from AI search, so browsing products never uses up the search allowance. | 60 (`AI_RATE_LIMIT_MAX`) |
 
-New review summaries also have a budget for the whole server, `AI_SUMMARY_DAILY_MAX` (100) a day counted from midnight UTC, so that browsing, or a script walking every product, cannot use up the Gemini quota AI search needs. Once it is spent, new summaries answer `503 AI_UNAVAILABLE` until the next day; cached ones are still served.
+New review summaries also have a budget for the whole server, `AI_SUMMARY_DAILY_MAX` (100) requests to Gemini a day counted from midnight UTC, so that browsing, or a script walking every product, cannot use up the Gemini quota AI search needs. A request that fails (timeout, Gemini busy, unusable answer) still counts. Once the budget is spent, new summaries answer `503 AI_UNAVAILABLE` until the next day; cached ones are still served.
 
 ### CORS
 
@@ -784,7 +784,7 @@ Errors: `503 AI_UNAVAILABLE` (no key and nothing cached, Gemini busy, or today's
 
 ### 5.6 AI assistant
 
-The Gemini key lives only on the server. Without it the AI endpoints answer `503 AI_UNAVAILABLE`, and the client keeps its on-device parser as the fallback.
+The Gemini key lives only on the server. Without it `POST /api/ai/search` and new review summaries answer `503 AI_UNAVAILABLE` and `GET /api/ai/status` says `enabled: false`; the client keeps its on-device parser as the fallback.
 
 #### `GET /api/ai/status`
 
@@ -1151,10 +1151,10 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `JWT_SECRET` | none, required | Secret for signing tokens. The server will not start without it, and in production not with fewer than 32 characters or with the `.env.example` value. |
 | `JWT_EXPIRES_IN` | `7d` | Token lifetime. |
 | `CLIENT_URL` | `http://localhost:3000` | Allowed browser origins, comma separated. Required in production, where each one must be a bare origin such as `https://shopsmart.onrender.com` (no path, lower case), or the server will not start. |
-| `AUTH_RATE_LIMIT_MAX` | `50` | Sign in requests per IP per 15 minutes. |
+| `AUTH_RATE_LIMIT_MAX` | `50` | Sign in, sign up and password change attempts per IP address per 15 minutes (one shared budget). |
 | `AI_RATE_LIMIT_MAX` | `60` | AI searches per IP per 15 minutes, and separately new review summaries per IP per 15 minutes. |
-| `AI_SUMMARY_DAILY_MAX` | `100` | New review summaries the whole server may ask Gemini for each day (from midnight UTC). Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
-| `GEMINI_API_KEY` | empty | Google Gemini key. Without it the AI endpoints answer `503 AI_UNAVAILABLE`. |
+| `AI_SUMMARY_DAILY_MAX` | `100` | Review summary requests the whole server may send Gemini each day (from midnight UTC). Failed requests count; cached summaries do not. Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
+| `GEMINI_API_KEY` | empty | Google Gemini key. Without it `POST /api/ai/search` and new review summaries answer `503 AI_UNAVAILABLE`, and `GET /api/ai/status` says `enabled: false`. Cached summaries are still served. |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model name. The server asks `gemini-3.5-flash-lite` and `gemini-3.6-flash` for minimal thinking and the 2.5 Flash models for none, and sends a temperature only to 2.x models. |
 | `GEMINI_TIMEOUT_MS` | `9000` | How long to wait for Gemini before `504 AI_TIMEOUT`. |
 | `STORE_TIMEZONE` | `Asia/Kolkata` | IANA time zone for the dashboard's daily sales. The server will not start with an unknown zone. |
