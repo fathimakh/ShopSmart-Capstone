@@ -2,7 +2,7 @@ import { nextSequence } from '../models/counter.js'
 import Product, { pushPricePoint } from '../models/product.js'
 import Review from '../models/review.js'
 import User from '../models/user.js'
-import { FORECAST_WEEKS, MIN_POINTS, WEEK, predictPrice } from '../services/pricePredict.js'
+import { FORECAST_WEEKS, WEEK, predictPrice } from '../services/pricePredict.js'
 import ApiError from '../utils/ApiError.js'
 import { buildPagination, createQueryReader, escapeRegex } from '../utils/queryReader.js'
 import { productRules } from '../validators/productValidators.js'
@@ -102,8 +102,8 @@ export async function getProduct(req, res) {
 /**
  * GET /api/products/:id/price-history - the recorded prices with their dates (weekly from
  * the seed, plus a point for every admin price change) and the forecast fitted through
- * them. With fewer than three points there is no trend yet, so the forecast is today's
- * price with zero confidence.
+ * them. With fewer than three points, or less than three weeks of history, there is no
+ * trend yet, so the forecast is today's price with zero confidence.
  */
 export async function getPriceHistory(req, res) {
   const product = await findProductOr404(req.productId, '+priceHistory')
@@ -124,7 +124,7 @@ export async function getPriceHistory(req, res) {
       confidence: prediction.confidence,
       verdict: prediction.verdict,
       weeks: prediction.weeks,
-      hasEnoughData: points.length >= MIN_POINTS
+      hasEnoughData: prediction.enoughData
     }
   })
 }

@@ -1,7 +1,7 @@
 /**
- * Price drop prediction. A least squares line is fitted through the recorded prices and
- * carried two weeks forward. R squared, how much of the movement the line explains,
- * becomes the confidence, so a noisy history never produces a confident call.
+ * Price drop prediction. A least squares line is fitted through the last twelve weeks of
+ * prices and carried two weeks forward. R squared, how much of the movement the line
+ * explains, becomes the confidence, so a noisy history never produces a confident call.
  *
  * In the mini project the history was rebuilt in the browser. Prices are now stored in
  * MongoDB, every admin price change adds a point, and the forecast moves with them.
@@ -13,6 +13,10 @@ export const SEED_WEEKS = 12
 export const FORECAST_WEEKS = 2
 // A line through one or two points says nothing about a trend.
 export const MIN_POINTS = 3
+// Nor do prices recorded minutes apart, however many there are: carried two weeks ahead,
+// a slope measured over an afternoon becomes a 40% swing. The history has to reach back
+// at least this far before there is a forecast.
+export const MIN_WEEKS = 3
 
 // Small deterministic generator so a product always gets the same starting history.
 function seededRandom(seed) {
@@ -83,23 +87,47 @@ export function linearRegression(points) {
   return { slope, intercept, rSquared: total ? 1 - residual / total : 0 }
 }
 
+/**
+ * A price holds until the next change, so every week without one is a week at the same
+ * price. Adding a weekly point across each quiet stretch, up to now, makes a price that
+ * has not moved for a month count as a flat month instead of being skipped over, which
+ * would otherwise carry an old slope further and further as time passes.
+ */
+function fillQuietWeeks(points, now) {
+  const filled = []
+  points.forEach((point, index) => {
+    filled.push(point)
+    const next = points[index + 1]
+    // Up to the next change, or for the current price up to and including this week.
+    for (let time = point.time + WEEK; next ? time < next.time : time <= now; time += WEEK) {
+      filled.push({ time, price: point.price })
+    }
+  })
+  return filled
+}
+
 export function predictPrice(history, currentPrice, now = Date.now()) {
-  const sorted = [...history].sort((a, b) => new Date(a.at) - new Date(b.at))
+  const sorted = [...history]
+    .map((point) => ({ time: new Date(point.at).getTime(), price: point.price }))
+    .sort((a, b) => a.time - b.time)
   const prices = sorted.map((point) => point.price)
 
-  if (sorted.length < MIN_POINTS) {
+  if (sorted.length < MIN_POINTS || (now - sorted[0].time) / WEEK < MIN_WEEKS) {
     return {
       history: prices,
       forecast: currentPrice,
       changePercent: 0,
       confidence: 0,
       verdict: 'steady',
-      weeks: 0
+      weeks: 0,
+      enoughData: false
     }
   }
 
-  const first = new Date(sorted[0].at).getTime()
-  const points = sorted.map((point) => ({ x: (new Date(point.at).getTime() - first) / WEEK, y: point.price }))
+  // Only the recent trend says where the price is heading.
+  const recent = fillQuietWeeks(sorted, now).filter((point) => point.time >= now - SEED_WEEKS * WEEK)
+  const first = recent[0].time
+  const points = recent.map((point) => ({ x: (point.time - first) / WEEK, y: point.price }))
   const { slope, intercept, rSquared } = linearRegression(points)
 
   const target = (now - first) / WEEK + FORECAST_WEEKS
@@ -120,6 +148,7 @@ export function predictPrice(history, currentPrice, now = Date.now()) {
     changePercent: Number(changePercent.toFixed(1)),
     confidence,
     verdict,
-    weeks: Math.max(1, Math.round(points[points.length - 1].x))
+    weeks: Math.round((now - first) / WEEK),
+    enoughData: true
   }
 }

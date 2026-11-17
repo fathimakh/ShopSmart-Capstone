@@ -633,7 +633,7 @@ Errors: `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`, `403 FORBIDDEN`.
 
 Public. The prices recorded for the product and a forecast two weeks ahead.
 
-Each product starts with twelve weekly prices from the seed, and every admin price change adds a point (the latest 26 are kept). A least squares line is fitted through the prices against time; how well it fits (R squared) becomes the confidence.
+Each product starts with twelve weekly prices from the seed, and every admin price change adds a point (the latest 26 are kept). A least squares line is fitted through the last twelve weeks of prices against time; how well it fits (R squared) becomes the confidence. A price holds until the next change, so each week without a change counts as a week at that price: a price left alone lets an old trend fade to `"steady"` within twelve weeks instead of carrying it further every week.
 
 **200**
 
@@ -666,8 +666,8 @@ Each product starts with twelve weekly prices from the seed, and every admin pri
 | `prediction.changePercent` | `(forecast − currentPrice) / currentPrice × 100`, one decimal. |
 | `prediction.confidence` | 0 to 100. |
 | `prediction.verdict` | `"drop"` or `"rise"` when confidence is at least 35 and the change is at least 2% either way, otherwise `"steady"`. |
-| `prediction.weeks` | How many weeks of history the line was fitted over. |
-| `prediction.hasEnoughData` | `false` with fewer than 3 points. Then `forecast` is the current price, `changePercent` 0, `confidence` 0, `verdict` `"steady"` and `weeks` 0; show "not enough price history yet" rather than a chart. |
+| `prediction.weeks` | How many weeks of history the line was fitted over, at most 12. |
+| `prediction.hasEnoughData` | `false` with fewer than 3 points, or when the oldest point is less than 3 weeks old (prices recorded minutes apart say nothing about the next two weeks). Then `forecast` is the current price, `changePercent` 0, `confidence` 0, `verdict` `"steady"` and `weeks` 0; show "not enough price history yet" rather than a chart. |
 
 Errors: `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`.
 
