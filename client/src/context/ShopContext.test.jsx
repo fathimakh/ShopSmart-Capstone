@@ -223,6 +223,78 @@ describe('ShopContext list sync', () => {
     expect(server.account.cart).toEqual([{ id: 7, quantity: 1 }])
   })
 
+  it('takes in a list another tab changed, so the next save does not erase it', async () => {
+    setToken(token)
+    store('shopsmart:lists-owner', shopper._id)
+    const server = fakeServer({ lists: { cart: [{ id: 1, quantity: 1 }] } })
+    const { result } = renderShop()
+    await waitFor(() => expect(result.current.shop.listsStatus).toBe('synced'))
+
+    // Another tab adds product 2, stores its cart and saves it to the account itself.
+    const otherTab = [{ id: 1, quantity: 1 }, { id: 2, quantity: 1 }]
+    server.account.cart = otherTab
+    store('shopsmart:cart', otherTab)
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'shopsmart:cart', newValue: JSON.stringify(otherTab) }))
+    })
+    expect(result.current.shop.cart).toEqual(otherTab)
+
+    act(() => {
+      result.current.shop.addToCart(3)
+    })
+    await waitFor(() => expect(server.callsTo('PUT /lists/cart')).toHaveLength(1))
+    expect(server.callsTo('PUT /lists/cart')[0].body.items).toEqual([...otherTab, { id: 3, quantity: 1 }])
+  })
+
+  it('follows a guest list changed in another tab', () => {
+    const server = fakeServer()
+    const { result } = renderShop()
+
+    act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: 'shopsmart:wishlist', newValue: '[4,5]' }))
+    })
+    expect(result.current.shop.wishlist).toEqual([4, 5])
+    act(() => {
+      result.current.shop.toggleWishlist(6)
+    })
+    expect(stored('shopsmart:wishlist')).toEqual([4, 5, 6])
+    expect(server.calls.filter((call) => call.path.startsWith('/lists'))).toHaveLength(0)
+  })
+
+  it('reads the lists again when the shopper comes back to the tab', async () => {
+    setToken(token)
+    store('shopsmart:lists-owner', shopper._id)
+    const server = fakeServer({ lists: { cart: [{ id: 1, quantity: 1 }], wishlist: [3] } })
+    const { result } = renderShop()
+    await waitFor(() => expect(result.current.shop.listsStatus).toBe('synced'))
+
+    // The shopper added to the cart and wishlist on their phone meanwhile.
+    server.account.cart = [{ id: 1, quantity: 1 }, { id: 2, quantity: 2 }]
+    server.account.wishlist = [3, 4]
+    act(() => {
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    await waitFor(() => expect(result.current.shop.cart).toEqual(server.account.cart))
+    expect(result.current.shop.wishlist).toEqual([3, 4])
+    expect(server.callsTo('PUT /lists/cart')).toHaveLength(0)
+  })
+
+  it('keeps a change made here while the lists are read again', async () => {
+    setToken(token)
+    store('shopsmart:lists-owner', shopper._id)
+    const server = fakeServer({ lists: { cart: [{ id: 1, quantity: 1 }] } })
+    const { result } = renderShop()
+    await waitFor(() => expect(result.current.shop.listsStatus).toBe('synced'))
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'))
+      result.current.shop.addToCart(5)
+    })
+    await waitFor(() => expect(server.callsTo('GET /lists')).toHaveLength(2))
+    await waitFor(() => expect(server.account.cart).toEqual([{ id: 1, quantity: 1 }, { id: 5, quantity: 1 }]))
+    expect(result.current.shop.cart).toEqual([{ id: 1, quantity: 1 }, { id: 5, quantity: 1 }])
+  })
+
   it('drops a cached list left by another account instead of merging it', async () => {
     setToken(token)
     store('shopsmart:lists-owner', 'someone-else')

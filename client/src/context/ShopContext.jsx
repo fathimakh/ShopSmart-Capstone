@@ -48,6 +48,14 @@ const cleaners = {
   compare: (ids) => sanitizeIds(ids, COMPARE_LIMIT)
 }
 
+// Which list each storage key holds, to follow changes made in another tab.
+const LIST_KEYS = {
+  [CART_KEY]: 'cart',
+  [WISHLIST_KEY]: 'wishlist',
+  [COMPARE_KEY]: 'compare',
+  [VIEWED_KEY]: 'recentlyViewed'
+}
+
 function readStored(key, fallback) {
   try {
     const stored = window.localStorage.getItem(key)
@@ -312,17 +320,22 @@ export function ShopProvider({ children }) {
   }, [startSync, flush])
 
   /**
-   * Reloads the account's lists, for example after an order took its products out of the
-   * saved cart. Lists with unsaved changes on this device are left alone.
+   * Reloads the account's lists, for example after another device changed them. Lists
+   * with unsaved changes on this device, or changed here while the request was out, are
+   * left alone: the answer may have been read before that change reached the server.
    */
   const reloadLists = useCallback(async () => {
     const sync = syncRef.current
     if (!sync.userId || !sync.ready) return
+    const before = listsRef.current
+    const pendingBefore = readPending()
     const data = await api.get('/lists')
     if (syncRef.current !== sync) return
     const pending = readPending()
     SYNCED_NAMES.forEach((name) => {
-      if (!pending.has(name)) writeList(name, SYNCED_LISTS[name].read(data))
+      if (pendingBefore.has(name) || pending.has(name)) return
+      if (listsRef.current[name] !== before[name]) return
+      writeList(name, SYNCED_LISTS[name].read(data))
     })
   }, [writeList])
 
@@ -346,6 +359,48 @@ export function ShopProvider({ children }) {
     window.addEventListener('pagehide', saveNow)
     return () => window.removeEventListener('pagehide', saveNow)
   }, [flush])
+
+  // Every save sends a whole list, so a tab must never send an old copy. Another tab of
+  // this browser that changes a list writes it to storage, and this tab takes it in. That
+  // tab saves the change itself, so nothing is queued here.
+  useEffect(() => {
+    const followOtherTab = (event) => {
+      const name = LIST_KEYS[event.key]
+      if (!name) return
+      let next
+      try {
+        next = event.newValue ? JSON.parse(event.newValue) : []
+      } catch (error) {
+        return
+      }
+      writeList(name, next)
+    }
+    window.addEventListener('storage', followOtherTab)
+    return () => window.removeEventListener('storage', followOtherTab)
+  }, [writeList])
+
+  // Another device may have changed the account's lists while this tab sat in the
+  // background, so coming back to it reads them again before the shopper changes one.
+  useEffect(() => {
+    let reloading = false
+    const refresh = () => {
+      if (document.visibilityState !== 'visible' || reloading) return
+      reloading = true
+      reloadLists()
+        .catch(() => {
+          // The lists on screen stay as they are; the next return to the tab tries again.
+        })
+        .finally(() => {
+          reloading = false
+        })
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [reloadLists])
 
   // Coming back online retries whatever failed while the connection was down.
   useEffect(() => {
