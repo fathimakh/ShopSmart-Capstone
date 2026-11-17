@@ -162,7 +162,7 @@ Browsers may call the API from the origins listed in `CLIENT_URL` (comma separat
 | 400 | `VALIDATION_ERROR` | One or more fields or query parameters are invalid. See `errors`. |
 | 400 | `NOTHING_TO_UPDATE` | A partial update sent none of the fields it accepts. |
 | 400 | `INVALID_ID` | A malformed id in the URL: a product id that is not a positive whole number, an order reference that is neither an order number nor an `_id`, or a malformed account or review id. |
-| 400 | `INVALID_JSON` | The body is not valid JSON. |
+| 400 | `INVALID_JSON` | The body is not valid JSON, or nests objects and arrays more than 32 levels deep. |
 | 401 | `NO_TOKEN`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `TOKEN_REVOKED`, `USER_NOT_FOUND` | No valid session. See [Authentication](#authentication). |
 | 401 | `INVALID_CREDENTIALS` | Wrong email or password at sign in (the same answer for both, on purpose). |
 | 403 | `FORBIDDEN` | Signed in, but not allowed: an admin only route, someone else's review, or cancelling someone else's order. |

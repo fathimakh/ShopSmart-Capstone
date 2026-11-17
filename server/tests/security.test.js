@@ -131,6 +131,23 @@ describe('Request bodies and unknown routes', () => {
     assert.equal(res.body.code, 'INVALID_JSON')
   })
 
+  it('answers 400 INVALID_JSON to a body nested deeper than any real request', async () => {
+    const depth = 200000
+    const res = await api()
+      .post('/api/auth/login')
+      .set('Content-Type', 'application/json')
+      .send(`{"email": ${'['.repeat(depth)}${']'.repeat(depth)}, "password": "x"}`)
+      .expect(400)
+    assert.equal(res.body.code, 'INVALID_JSON')
+    assert.equal(res.body.message, 'The request body is nested too deeply')
+
+    const nested = await api()
+      .post('/api/auth/login')
+      .send({ email: { a: { b: { c: [[['x']]] } } }, password: 'x' })
+      .expect(400)
+    assert.equal(nested.body.code, 'VALIDATION_ERROR', 'ordinary nesting still reaches validation')
+  })
+
   it('answers 413 PAYLOAD_TOO_LARGE above 1 MB', async () => {
     const res = await api()
       .post('/api/auth/login')
