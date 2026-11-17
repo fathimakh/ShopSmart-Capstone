@@ -151,6 +151,19 @@ describe('POST /api/ai/search', () => {
     assert.match(prompt, /^Filters used for it: \{"categories":\["smartphones"\],"maxPrice":1000\}$/m)
   })
 
+  it('drops filler words a filter already covers from the keywords', async (t) => {
+    stubGemini(t, () => geminiReply(searchAnswer({ minRating: 4, keywords: ['good reviews', 'Cheap', 'camera', 'best'] })))
+    const res = await api().post('/api/ai/search').send({ query: 'a cheap phone with a camera and good reviews' }).expect(200)
+    assert.deepEqual(res.body.result.keywords, ['camera'])
+    assert.equal(res.body.result.minRating, 4)
+  })
+
+  it('asks Gemini to lower the price cap when the shopper wants cheaper options', async (t) => {
+    const fetchMock = stubGemini(t, () => geminiReply(searchAnswer()))
+    await api().post('/api/ai/search').send({ query: 'show cheaper options' }).expect(200)
+    assert.match(requestBody(fetchMock).systemInstruction.parts[0].text, /cheaper options must lower maxPrice/)
+  })
+
   it('answers 502 AI_FAILED when the answer is not usable', async (t) => {
     const answers = [
       () => geminiReply('this is not json'),
