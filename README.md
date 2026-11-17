@@ -157,7 +157,7 @@ category, brand or vocabulary.
 
 ### Prerequisites
 
-- Node.js v16 or higher
+- Node.js 22 or higher (the version in `.nvmrc`)
 - npm
 
 ### Installation Steps
