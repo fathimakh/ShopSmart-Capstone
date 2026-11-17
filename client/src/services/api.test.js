@@ -58,6 +58,9 @@ describe('normalizeProduct', () => {
     expect(product.images).toEqual(['https://cdn.example/vase.webp'])
     expect(product.reviewCount).toBe(0)
     expect(product.specs.Dimensions).toBe('Not specified')
-    expect(product.specs['Minimum order']).toBe('1 unit(s)')
+  })
+
+  it('does not show a minimum order, which checkout does not apply', () => {
+    expect(normalizeProduct(serverProduct).specs).not.toHaveProperty('Minimum order')
   })
 })

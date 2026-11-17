@@ -221,7 +221,7 @@ function ProductForm({
           })}
           {textInput('minimumOrderQuantity', 'Minimum order (optional)', {
             inputMode: 'numeric',
-            hint: 'Shown as information only. Defaults to 1.'
+            hint: 'Kept with the product only: the shop does not show it or apply it at checkout. Defaults to 1.'
           })}
         </div>
         {mode === 'edit' ? (

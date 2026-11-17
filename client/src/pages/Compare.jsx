@@ -8,15 +8,7 @@ import { formatPrice } from '../utils/format'
 import './Compare.css'
 import usePageTitle from '../hooks/usePageTitle'
 
-const specRows = [
-  'SKU',
-  'Warranty',
-  'Shipping',
-  'Returns',
-  'Weight',
-  'Dimensions',
-  'Minimum order'
-]
+const specRows = ['SKU', 'Warranty', 'Shipping', 'Returns', 'Weight', 'Dimensions']
 
 function Compare() {
   usePageTitle('Compare products')

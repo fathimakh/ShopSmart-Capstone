@@ -48,8 +48,9 @@ export function normalizeProduct(raw) {
         : 'Not specified',
       Warranty: raw.warrantyInformation || 'Not specified',
       Shipping: raw.shippingInformation || 'Not specified',
-      Returns: raw.returnPolicy || 'Not specified',
-      'Minimum order': `${raw.minimumOrderQuantity || 1} unit(s)`
+      // The catalogue's minimum order is left out: checkout does not apply it, so showing
+      // it would state a rule the shop does not follow.
+      Returns: raw.returnPolicy || 'Not specified'
     }
   }
 }
