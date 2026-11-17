@@ -791,7 +791,7 @@ The Gemini key lives only on the server. Without it the AI endpoints answer `503
 Public.
 
 ```json
-{ "success": true, "enabled": true, "model": "gemini-2.5-flash" }
+{ "success": true, "enabled": true, "model": "gemini-3.5-flash-lite" }
 ```
 
 `enabled` is `false` when no key is configured.
@@ -1155,7 +1155,7 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `AI_RATE_LIMIT_MAX` | `60` | AI searches per IP per 15 minutes, and separately new review summaries per IP per 15 minutes. |
 | `AI_SUMMARY_DAILY_MAX` | `100` | New review summaries the whole server may ask Gemini for each day (from midnight UTC). Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
 | `GEMINI_API_KEY` | empty | Google Gemini key. Without it the AI endpoints answer `503 AI_UNAVAILABLE`. |
-| `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name. |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model name. The server asks `gemini-3.5-flash-lite` and `gemini-3.6-flash` for minimal thinking and the 2.5 Flash models for none, and sends a temperature only to 2.x models. |
 | `GEMINI_TIMEOUT_MS` | `9000` | How long to wait for Gemini before `504 AI_TIMEOUT`. |
 | `STORE_TIMEZONE` | `Asia/Kolkata` | IANA time zone for the dashboard's daily sales. The server will not start with an unknown zone. |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | `admin@shopsmart.dev`, `Admin@1234` | The admin account `npm run seed` creates. |

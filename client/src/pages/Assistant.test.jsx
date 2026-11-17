@@ -14,7 +14,7 @@ const products = [
 function aiRoutes(extra) {
   return {
     'GET /products': () => [200, { success: true, products }],
-    'GET /ai/status': () => [200, { success: true, enabled: true, model: 'gemini-2.5-flash' }],
+    'GET /ai/status': () => [200, { success: true, enabled: true, model: 'gemini-3.5-flash-lite' }],
     ...extra
   }
 }
@@ -96,7 +96,7 @@ describe('Shopping assistant', () => {
   })
 
   it('does not call the search at all when the server has no Gemini key', async () => {
-    const api = fakeApi(aiRoutes({ 'GET /ai/status': () => [200, { success: true, enabled: false, model: 'gemini-2.5-flash' }] }))
+    const api = fakeApi(aiRoutes({ 'GET /ai/status': () => [200, { success: true, enabled: false, model: 'gemini-3.5-flash-lite' }] }))
     renderShopPage(<Assistant />, { path: '/assistant' })
 
     expect(await screen.findByText(/Gemini is not set up on this server right now/)).toBeInTheDocument()

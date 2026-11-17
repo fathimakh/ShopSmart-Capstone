@@ -9,7 +9,7 @@ describe('ReviewSummary', () => {
 
   it('does not ask for a summary the server cannot write without a Gemini key', async () => {
     const api = fakeApi({
-      'GET /ai/status': () => [200, { success: true, enabled: false, model: 'gemini-2.5-flash' }],
+      'GET /ai/status': () => [200, { success: true, enabled: false, model: 'gemini-3.5-flash-lite' }],
       'GET /products/1/review-summary': () => [
         503,
         { success: false, message: 'The AI assistant is not set up on this server.', code: 'AI_UNAVAILABLE' }
@@ -23,7 +23,7 @@ describe('ReviewSummary', () => {
 
   it('asks for the summary when Gemini is set up', async () => {
     const api = fakeApi({
-      'GET /ai/status': () => [200, { success: true, enabled: true, model: 'gemini-2.5-flash' }],
+      'GET /ai/status': () => [200, { success: true, enabled: true, model: 'gemini-3.5-flash-lite' }],
       'GET /products/1/review-summary': () => [
         200,
         {

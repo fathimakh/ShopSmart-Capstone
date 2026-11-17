@@ -28,7 +28,7 @@ process.env.AUTH_RATE_LIMIT_MAX = '10000'
 process.env.AI_RATE_LIMIT_MAX = '10000'
 // Never the key from .env. The AI tests switch a fake key on and stub fetch themselves.
 process.env.GEMINI_API_KEY = ''
-process.env.GEMINI_MODEL = 'gemini-2.5-flash'
+process.env.GEMINI_MODEL = 'gemini-3.5-flash-lite'
 process.env.GEMINI_TIMEOUT_MS = '2000'
 process.env.STORE_TIMEZONE = 'UTC'
 // The shared demo accounts, whatever SEED_ADMIN_EMAIL or DEMO_ACCOUNT_EMAILS say in .env.

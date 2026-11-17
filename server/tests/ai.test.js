@@ -60,7 +60,7 @@ after(() => {
 describe('GET /api/ai/status', () => {
   it('says whether a Gemini key is configured', async () => {
     const on = await api().get('/api/ai/status').expect(200)
-    assert.deepEqual(on.body, { success: true, enabled: true, model: 'gemini-2.5-flash' })
+    assert.deepEqual(on.body, { success: true, enabled: true, model: 'gemini-3.5-flash-lite' })
 
     env.geminiApiKey = ''
     const off = await api().get('/api/ai/status').expect(200)
@@ -105,7 +105,7 @@ describe('POST /api/ai/search', () => {
 
     assert.equal(fetchMock.mock.callCount(), 1)
     const [url, options] = fetchMock.mock.calls[0].arguments
-    assert.equal(url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent')
+    assert.equal(url, 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent')
     assert.equal(options.headers['x-goog-api-key'], FAKE_KEY)
     assert.equal(url.includes(FAKE_KEY), false, 'the key never goes in the URL')
 
@@ -116,7 +116,27 @@ describe('POST /api/ai/search', () => {
     assert.match(prompt, /^Shopper message: apple phone with wireless charging$/m)
     assert.equal(body.generationConfig.responseMimeType, 'application/json')
     assert.deepEqual(body.generationConfig.responseSchema.properties.categories.items.enum, ['laptops', 'mens-shoes', 'smartphones'])
-    assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingBudget: 0 })
+    assert.deepEqual(body.generationConfig.thinkingConfig, { thinkingLevel: 'minimal' })
+    assert.equal('temperature' in body.generationConfig, false, 'Gemini 3 models ignore temperature')
+  })
+
+  it('sends each model only the thinking and temperature settings it accepts', async (t) => {
+    const model = env.geminiModel
+    t.after(() => {
+      env.geminiModel = model
+    })
+    const fetchMock = stubGemini(t, () => geminiReply(searchAnswer()))
+    const configFor = async (name) => {
+      env.geminiModel = name
+      await api().post('/api/ai/search').send({ query: 'apple phones' }).expect(200)
+      const { temperature, thinkingConfig } = requestBody(fetchMock, fetchMock.mock.callCount() - 1).generationConfig
+      return { temperature, thinkingConfig }
+    }
+
+    assert.deepEqual(await configFor('gemini-2.5-flash-lite'), { temperature: 0.1, thinkingConfig: { thinkingBudget: 0 } })
+    assert.deepEqual(await configFor('gemini-3.6-flash'), { temperature: undefined, thinkingConfig: { thinkingLevel: 'minimal' } })
+    // No minimal level on this model, so it keeps its own default.
+    assert.deepEqual(await configFor('gemini-3.8-flash'), { temperature: undefined, thinkingConfig: undefined })
   })
 
   it('sends the earlier request so a follow up refines it', async (t) => {

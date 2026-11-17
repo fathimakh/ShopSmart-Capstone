@@ -27,16 +27,29 @@ function logProblem(message) {
   if (!env.isTest) console.warn(`[gemini] ${message}`)
 }
 
+// Gemini 3 and later models ignore temperature, and Google says later generations will
+// answer it with a 400, so only the 2.x models are sent one.
+const TAKES_TEMPERATURE = /^gemini-2\./
+
+// These answers are short lookups, and thinking only makes the search box slower. The 2.5
+// Flash models switch it off with a zero budget; gemini-3.5-flash-lite and gemini-3.6-flash
+// take the "minimal" level, which is close to off. Any other model keeps its default,
+// because a budget or a level the model does not offer is an error.
+function thinkingConfig(model) {
+  if (/^gemini-2\.5-flash/.test(model)) return { thinkingBudget: 0 }
+  if (/^gemini-3\.(5-flash-lite|6-flash)$/.test(model)) return { thinkingLevel: 'minimal' }
+  return null
+}
+
 function generationConfig(schema, temperature, maxOutputTokens) {
   const config = {
-    temperature,
     maxOutputTokens,
     responseMimeType: 'application/json',
     responseSchema: schema
   }
-  // The 2.5 Flash models can skip their thinking step, which keeps the search box quick.
-  // Other models reject a zero budget, so they keep their default.
-  if (/^gemini-2\.5-flash/.test(env.geminiModel)) config.thinkingConfig = { thinkingBudget: 0 }
+  if (TAKES_TEMPERATURE.test(env.geminiModel)) config.temperature = temperature
+  const thinking = thinkingConfig(env.geminiModel)
+  if (thinking) config.thinkingConfig = thinking
   return config
 }
 
