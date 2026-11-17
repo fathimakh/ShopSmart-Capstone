@@ -33,7 +33,7 @@ This document is the contract between the API and the React client. Everything b
 | Where | Base URL |
 |---|---|
 | Local development | `http://localhost:5050/api` |
-| Deployed | `https://<api-host>/api` |
+| Deployed (Render) | `https://shopsmart-capstone-api.onrender.com/api` |
 
 Every path in this document is relative to the host, and every endpoint apart from the `GET /` pointer (5.1) lives under `/api`. The client should read the base URL from `VITE_API_URL` (including the `/api` suffix).
 

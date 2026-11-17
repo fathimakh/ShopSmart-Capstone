@@ -13,9 +13,10 @@ dashboard, products, orders and accounts.
 
 | | |
 |---|---|
-| **Live website** | Added after the first deploy |
-| **Live API** | Added after the first deploy |
+| **Live website** | https://shopsmart-capstone-web.onrender.com |
+| **Live API** | https://shopsmart-capstone-api.onrender.com/api/health |
 | **Repository** | https://github.com/fathimakh/ShopSmart-Capstone |
+| **Mini project (before)** | https://shopsmart-project.netlify.app · [fathimakh/ShopSmart](https://github.com/fathimakh/ShopSmart) |
 | **Demo shopper** | `demo@shopsmart.dev` / `Demo@1234` (16 demo orders) |
 | **Demo admin** | `admin@shopsmart.dev` / `Admin@1234` |
 
@@ -35,7 +36,10 @@ The mini project (the first 32 commits of this repository, August 2026) was a fr
 React app. The browser fetched the DummyJSON catalogue, kept the cart, wishlist and placed
 orders in local storage, called Gemini directly with a key built into the JavaScript bundle,
 and rebuilt each product's price history from its discount. It was hosted on Netlify as a
-static site.
+static site, https://shopsmart-project.netlify.app (repository
+[fathimakh/ShopSmart](https://github.com/fathimakh/ShopSmart)), which stays online unchanged
+for comparison. The capstone runs separately on Render at
+https://shopsmart-capstone-web.onrender.com.
 
 The capstone keeps the React front end, moves it into `client/`, and puts a real server
 behind it in `server/`:
@@ -51,7 +55,7 @@ behind it in `server/`:
 | Gemini | Called from the browser, key visible in the bundle | Called only by the server (`server/services/gemini.js`). The key never reaches the browser. AI review summaries are new |
 | Admin | None | `/admin`: dashboard, products, orders and accounts, behind the admin role in the API and in the UI |
 | Tests | None | 156 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
-| Hosting | Netlify static site | Render web service for the API, Render static site for the client, MongoDB Atlas, all described in [`render.yaml`](render.yaml) |
+| Hosting | Netlify static site ([shopsmart-project.netlify.app](https://shopsmart-project.netlify.app)) | Render web service for the API, Render static site for the client, MongoDB Atlas, all described in [`render.yaml`](render.yaml) ([shopsmart-capstone-web.onrender.com](https://shopsmart-capstone-web.onrender.com)) |
 
 ## What it does
 
@@ -572,9 +576,9 @@ Render setup has been checked.
 | Frontend consumes the API | `client/src/services/http.js`, used by the service files (catalogue, price history, orders, reviews, AI, admin) and by the auth and shop contexts (session, saved lists) |
 | At least one AI tool, matched to the domain | Google Gemini API: natural language product search and review summaries (`server/services/`). Also TF-IDF recommendations and a regression price forecast |
 | A working, visible AI feature | Assistant page, AI search box, review summary panel, "Recommended for you" (appears after viewing a product), "Similar products", price outlook. Gemini needs `GEMINI_API_KEY` on the server; without it the on-device parser answers, so the search always responds |
-| Deploy both frontend and backend | `render.yaml`: API web service + static site, with MongoDB Atlas. Live links are added at the top after the first deploy |
+| Deploy both frontend and backend | Live on Render (API web service + static site, from `render.yaml`) with MongoDB Atlas; links at the top |
 | Fully documented deployment process | "Deployment" above, the comments in `render.yaml`, both `.env.example` files |
-| Public GitHub repository with consistent commits | Not public yet: the repository (planned name fathimakh/ShopSmart-Capstone) is created and pushed before the first deploy. History: the mini project's 32 commits, then one commit per capstone change with a plain message |
+| Public GitHub repository with consistent commits | https://github.com/fathimakh/ShopSmart-Capstone. History: the mini project's 32 commits, then one commit per capstone change with a plain message |
 | Responsive UI, accessible design, clean code | Checked at 375, 768 and 1920 px; bottom navigation on phones; skip link, focus moved to each new page, labelled fields, named icon buttons; one folder per component, a single API client, shared validation rules |
 | Documentation for submission | This README, [`docs/API.md`](docs/API.md), the screenshots, the demo accounts |
 | *Module 5 rubric:* MERN integration workflow | Vite proxy in development; `VITE_API_URL` and `CLIENT_URL` in production; see "Architecture" |
@@ -584,7 +588,7 @@ Render setup has been checked.
 | *Module 5 rubric:* login, protected routes, token handling | The token is checked with `GET /api/auth/me` on start; `ProtectedRoute` sends guests to sign in and back; a dead session signs out with a notice |
 | *Module 5 rubric:* environment variables (Vite + Node) | `client/.env.example`, `server/.env.example`, `render.yaml` |
 | *Module 5 rubric:* errors, loading states, token validation | Skeletons, retry notices, the wake-up notice, field errors from the server, the session check on start |
-| *Module 5 rubric:* GitHub and deployment | Repository history and `render.yaml`; live links after the first deploy |
+| *Module 5 rubric:* GitHub and deployment | Repository history, `render.yaml` and the live links at the top |
 
 ## Known limitations
 
@@ -599,8 +603,6 @@ Render setup has been checked.
   Gemini, so a wrong key or a model the key cannot use still shows as set up, and the search
   quietly answers on the device. After adding the key, try one search on the assistant
   page: the answer should say "Read by Gemini on the ShopSmart server".
-- **Not deployed yet.** The Render build and start were simulated locally; the live links and
-  the repository link are added after the first deploy.
 - **Free plan cold start.** The first visit after 15 quiet minutes waits about a minute.
 - **In-memory counters.** The rate limits and the daily summary cap are counted in the
   server's memory, so they start again when the free service restarts after sleeping.
