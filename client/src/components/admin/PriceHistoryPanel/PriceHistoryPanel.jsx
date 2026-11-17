@@ -110,7 +110,8 @@ function PriceHistoryPanel({ productId, version = 0 }) {
             </p>
           ) : (
             <p className="price-history-forecast">
-              There is not enough price history yet for a forecast. It needs at least 3 prices.
+              There is not enough price history yet for a forecast. It needs at least 3 prices, the
+              first of them recorded 3 or more weeks ago.
             </p>
           )}
         </>
