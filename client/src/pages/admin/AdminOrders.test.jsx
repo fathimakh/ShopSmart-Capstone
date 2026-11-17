@@ -9,6 +9,9 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: adminUser, refreshUser: () => Promise.resolve(adminUser) })
 }))
 
+const catalog = vi.hoisted(() => ({ restockProducts: vi.fn() }))
+vi.mock('../../context/CatalogContext', () => ({ useCatalog: () => catalog }))
+
 const placedAt = '2026-11-16T21:43:51.797Z'
 
 function makeOrder(overrides = {}) {
@@ -105,6 +108,31 @@ describe('AdminOrderDetails', () => {
     const statusHeading = screen.getByRole('heading', { level: 2, name: 'Status: Shipped' })
     await waitFor(() => expect(statusHeading).toHaveFocus())
     expect(screen.getByText('Handed to the courier')).toBeInTheDocument()
+  })
+
+  it('puts a cancelled order back on the shop shelves', async () => {
+    const cancelled = makeOrder({
+      status: 'cancelled',
+      updatedAt: '2026-11-17T10:00:00.000Z',
+      statusHistory: [
+        { status: 'processing', at: placedAt, note: 'Order placed' },
+        { status: 'cancelled', at: '2026-11-17T10:00:00.000Z', note: 'Cancelled by the store' }
+      ]
+    })
+    fakeApi({
+      'GET /orders/SS100001': () => [200, { success: true, order: makeOrder() }],
+      'PATCH /orders/SS100001/status': () => [200, { success: true, order: cancelled }]
+    })
+    renderAdminPage(<AdminOrderDetails />, detailRoute)
+    await screen.findByRole('heading', { level: 2, name: 'Status: Processing' })
+
+    fireEvent.click(screen.getByRole('radio', { name: /Cancelled/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel order' }))
+    fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Cancel order' }))
+
+    expect(await screen.findByRole('heading', { level: 2, name: 'Status: Cancelled' })).toBeInTheDocument()
+    expect(catalog.restockProducts).toHaveBeenCalledTimes(1)
+    expect(catalog.restockProducts).toHaveBeenCalledWith(cancelled.items)
   })
 
   it('loads the latest order after a conflict', async () => {

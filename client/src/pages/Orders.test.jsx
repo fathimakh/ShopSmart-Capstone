@@ -157,6 +157,35 @@ describe('OrderDetails page', () => {
     expect(screen.queryByRole('button', { name: 'Cancel order' })).not.toBeInTheDocument()
   })
 
+  it('puts the cancelled units back in the loaded catalogue, so they can be bought again', async () => {
+    const cancelled = makeOrder({
+      status: 'cancelled',
+      statusHistory: [
+        { status: 'processing', at: placedAt, note: 'Order placed' },
+        { status: 'cancelled', at: placedAt, note: 'Cancelled by the shopper' }
+      ]
+    })
+    fakeApi(
+      accountRoutes({
+        // The order took the last two units of product 1.
+        'GET /products': () => [
+          200,
+          { success: true, products: [apiProduct(1, { stock: 0, availabilityStatus: 'Out of Stock' }), apiProduct(2)] }
+        ],
+        'GET /orders/SS100001': () => [200, { success: true, order: makeOrder() }],
+        'PATCH /orders/SS100001/cancel': () => [200, { success: true, order: cancelled }]
+      })
+    )
+    renderShopPage(<OrderDetails />, { path: '/orders/:number', url: '/orders/SS100001' })
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Cancel order' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Yes, cancel the order' }))
+    await screen.findByText(/Your order is cancelled/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Add these to your cart' }))
+    expect(await screen.findAllByText('Added 3 items to your cart.')).not.toHaveLength(0)
+  })
+
   it('shows the order as it is now when it shipped before the cancel arrived', async () => {
     let order = makeOrder()
     const api = fakeApi(

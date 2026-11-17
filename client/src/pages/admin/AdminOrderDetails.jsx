@@ -5,6 +5,7 @@ import AdminLoadError from '../../components/admin/AdminLoadError/AdminLoadError
 import AdminPageHeader from '../../components/admin/AdminPageHeader/AdminPageHeader'
 import OrderStatusBadge from '../../components/admin/OrderStatusBadge/OrderStatusBadge'
 import OrderStatusForm from '../../components/admin/OrderStatusForm/OrderStatusForm'
+import { useCatalog } from '../../context/CatalogContext'
 import useAdminResource from '../../hooks/useAdminResource'
 import usePageTitle from '../../hooks/usePageTitle'
 import { ORDER_STATUS_LABELS, describePayment, orderItemCount } from '../../services/adminRules'
@@ -32,6 +33,7 @@ function AdminOrderDetails() {
   const heading = useRef(null)
   const statusHeading = useRef(null)
   const focusStatusAfterUpdate = useRef(false)
+  const { restockProducts } = useCatalog()
   const { data, status, error, isRefreshing, reload, setData } = useAdminResource(
     validRef ? `/orders/${encodeURIComponent(ref)}` : null,
     { keepPreviousData: false }
@@ -126,6 +128,10 @@ function AdminOrderDetails() {
               onUpdated={(updated) => {
                 focusStatusAfterUpdate.current = true
                 setData((current) => ({ ...current, order: updated }))
+                // The server put a cancelled order's units back, so the shop shows them.
+                if (updated.status === 'cancelled' && order.status !== 'cancelled') {
+                  restockProducts(updated.items)
+                }
               }}
               onStale={reload}
             />

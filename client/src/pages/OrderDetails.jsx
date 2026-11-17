@@ -10,6 +10,7 @@ import {
   FiWifiOff,
   FiXCircle
 } from 'react-icons/fi'
+import { useCatalog } from '../context/CatalogContext'
 import useBuyAgain from '../hooks/useBuyAgain'
 import usePageTitle from '../hooks/usePageTitle'
 import EmptyState from '../components/EmptyState/EmptyState'
@@ -67,6 +68,7 @@ function OrderDetails() {
   const [notice, setNotice] = useState('')
 
   const { buyAgain, result } = useBuyAgain()
+  const { restockProducts } = useCatalog()
   const heading = useRef(null)
   const cancelButton = useRef(null)
   const confirmHeading = useRef(null)
@@ -146,6 +148,8 @@ function OrderDetails() {
     try {
       const cancelled = await cancelOrder(order.number, reason.trim())
       setOrder(cancelled)
+      // The server put the units back; the loaded catalogue still counts them as sold.
+      restockProducts(cancelled.items)
       setCancelStep('idle')
       setReason('')
       setNotice('Your order is cancelled. Its products are back on the shelf, and no payment was taken.')

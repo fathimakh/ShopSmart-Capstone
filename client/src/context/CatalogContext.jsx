@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchProducts } from '../services/api'
+import { availabilityFor, fetchProducts } from '../services/api'
 import { isAbortError } from '../services/http'
 
 const CatalogContext = createContext(null)
@@ -72,6 +72,26 @@ export function CatalogProvider({ children }) {
   }, [])
 
   /**
+   * Puts back the units of a cancelled order, as the server just did, so its products are
+   * not shown sold out until the next visit. items are the order's { id, quantity } lines.
+   */
+  const restockProducts = useCallback(
+    (items) => {
+      items.forEach((item) => {
+        updateProduct(item.id, (product) => {
+          const stock = product.stock + item.quantity
+          return {
+            stock,
+            availability: availabilityFor(stock),
+            soldCount: Math.max(product.soldCount - item.quantity, 0)
+          }
+        })
+      })
+    },
+    [updateProduct]
+  )
+
+  /**
    * Puts a product an admin has just added or edited into the loaded catalogue, replacing
    * the copy already there. A new product goes last, where its id puts it in the
    * catalogue's own order, so the shop shows it without reloading every product.
@@ -113,10 +133,21 @@ export function CatalogProvider({ children }) {
       },
       reload: loadCatalogue,
       updateProduct,
+      restockProducts,
       putProduct,
       removeProduct
     }
-  }, [products, status, error, isSlow, loadCatalogue, updateProduct, putProduct, removeProduct])
+  }, [
+    products,
+    status,
+    error,
+    isSlow,
+    loadCatalogue,
+    updateProduct,
+    restockProducts,
+    putProduct,
+    removeProduct
+  ])
 
   return <CatalogContext.Provider value={value}>{children}</CatalogContext.Provider>
 }
