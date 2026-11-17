@@ -103,7 +103,9 @@ function ProductCard({ product }) {
               disabled={!compared && isCompareFull}
               onChange={() => toggleCompare(product.id)}
             />
-            <span>Compare</span>
+            <span>
+              Compare<span className="visually-hidden"> {product.title}</span>
+            </span>
           </label>
         </div>
       </div>

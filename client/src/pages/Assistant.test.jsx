@@ -90,7 +90,7 @@ describe('Shopping assistant', () => {
 
     await send('apple laptops')
     expect(await screen.findByText('Read on this device, because Gemini is not available on the server right now')).toBeInTheDocument()
-    expect(screen.getByText('Laptop Pro')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Laptop Pro' })).toBeInTheDocument()
     expect(screen.getByText('Brand: Apple')).toBeInTheDocument()
   })
 
@@ -101,7 +101,7 @@ describe('Shopping assistant', () => {
     expect(await screen.findByText(/Gemini is not set up on this server right now/)).toBeInTheDocument()
     await send('samsung phones under 500')
     expect(await screen.findByText('Read on this device, because Gemini is not set up on this server')).toBeInTheDocument()
-    expect(screen.getByText('Galaxy Phone')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Galaxy Phone' })).toBeInTheDocument()
     expect(api.callsTo('POST /ai/search')).toHaveLength(0)
     expect(api.callsTo('GET /ai/status')).toHaveLength(1)
   })

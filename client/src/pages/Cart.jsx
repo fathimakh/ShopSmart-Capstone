@@ -101,6 +101,7 @@ function Cart() {
 
                 <div className="cart-item-actions">
                   <QuantityStepper
+                    label={`Quantity of ${item.title}`}
                     value={item.quantity}
                     max={Math.min(item.stock, maxQuantity)}
                     onChange={(quantity) => updateQuantity(item.id, quantity)}

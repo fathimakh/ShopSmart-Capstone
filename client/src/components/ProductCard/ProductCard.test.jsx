@@ -20,6 +20,7 @@ describe('ProductCard', () => {
     expect(screen.getByText('Sold out', { selector: '.product-card-stock' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Add to cart - Last Lamp' })).toBeEnabled()
     expect(screen.getByText('Only 2 left')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Compare Last Lamp' })).toBeInTheDocument()
   })
 
   it('moves focus to Go to cart after adding, as the pressed button goes away', async () => {

@@ -45,6 +45,10 @@ describe('Cart', () => {
     expect(await screen.findByText('Sold out, so checkout cannot take it.')).toBeInTheDocument()
     expect(screen.getByText('Only 2 left, so checkout cannot take 5.')).toBeInTheDocument()
 
+    // Each line's controls carry its product's name.
+    expect(screen.getByRole('button', { name: 'Increase quantity of Last Lamp' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Decrease quantity of Sold Vase' })).toBeDisabled()
+
     fireEvent.click(screen.getByRole('button', { name: 'Change to 2 for Last Lamp' }))
     expect(screen.queryByText(/Only 2 left/)).not.toBeInTheDocument()
     expect(within(screen.getByRole('heading', { name: 'Last Lamp' })).getByRole('link')).toHaveFocus()
