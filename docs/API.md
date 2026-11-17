@@ -429,7 +429,7 @@ Public. Tells a visitor where to look.
 
 #### `GET /api/health`
 
-Public. Used by the host's health check and by the client to wake a sleeping free-tier server.
+Public. Used by the host's health check. The client does not call it: its first requests wait for a sleeping server instead (see Free-tier hosting in [Notes for the client](#6-notes-for-the-client)).
 
 ```json
 { "success": true, "status": "ok", "db": "connected", "ai": false, "uptime": 2 }
@@ -1123,7 +1123,7 @@ Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `403 DEMO_ACC
 
 **Products.** Load the catalogue with `GET /api/products?limit=0` and read `products`. Use `reviewCount` from the product (there is no `reviews` array) and fetch reviews from the reviews endpoint. Work out the struck-through price as in [Product](#32-product). `availabilityStatus` says "Low Stock" below 10 units.
 
-**Lists.** After sign in or sign up, call `POST /api/lists/merge` once with the guest's lists and replace the local lists with the answer. While signed in, send the whole list after each change (`PUT /api/lists/cart`, `/wishlist`, `/viewed`). Keep cart quantities between 1 and 99 and at most 50 lines, or the whole `PUT` is rejected. The server keeps 12 recently viewed products.
+**Lists.** After sign in or sign up, call `POST /api/lists/merge` once with the guest's lists and replace the local lists with the answer. While signed in, send the whole list after each change (`PUT /api/lists/cart`, `/wishlist`, `/viewed`). Because each `PUT` replaces the list, read `GET /api/lists` again when the tab regains focus or becomes visible, so a list changed on another device is not saved over with an old copy; the ShopSmart client does this, and follows changes made in its other tabs through `localStorage`. Keep cart quantities between 1 and 99 and at most 50 lines, or the whole `PUT` is rejected. The server keeps 12 recently viewed products.
 
 **Checkout.** Requires sign in. Prefill delivery from `user.name`, `user.email` and `user.address`. Send only ids and quantities, `delivery` and `payment` (`cardLast4` or `upiId`, never the card number or CVV). Show the server's totals from the returned order. On `409 OUT_OF_STOCK`, use `details.items` to point at the lines to fix. On success, go to the order page with `order.number`.
 
@@ -1131,11 +1131,11 @@ Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `403 DEMO_ACC
 
 **AI search.** Call `POST /api/ai/search` with the message and, for a follow-up, `previous: { query, filters }` from the last answer. On any error (`503`, `504`, `502`, `429`), or when the result has no filters and no keywords, use the on-device parser instead. `GET /api/ai/status` (or `ai` in `/api/health`) says up front whether Gemini is configured.
 
-**Review summary.** Request it after the product page renders. Show it when `summary` is not `null`; on any error, hide the panel. Saving or deleting a review makes the next request write a fresh summary.
+**Review summary.** Request it after the product page renders. Show it when `summary` is not `null`; on any error, hide the panel. Saving or deleting a review makes the next request write a fresh summary. The ShopSmart client skips the request while `GET /api/ai/status` says `ai` is `false`, which keeps `503` answers out of the browser console but also hides any summary cached before the key was removed.
 
 **Price chart.** Use `points` (with dates) for the chart and `prediction` for the verdict. When `prediction.hasEnoughData` is `false`, show a short "not enough price history yet" note instead of a chart.
 
-**Free-tier hosting.** A sleeping server can take up to a minute to answer the first request. A generous timeout (about 20 seconds) and a "waking up the server" notice on slow requests help.
+**Free-tier hosting.** A sleeping server can take up to a minute to answer the first request. The ShopSmart client gives the requests a visit starts with (the catalogue, `GET /api/auth/me`, sign in and sign up) up to 60 seconds, shows a "waking up the server" notice once the catalogue takes more than 5 seconds, and retries a failed session check when the browser comes back online. Other requests give up after 20 seconds.
 
 ---
 
