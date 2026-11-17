@@ -1,8 +1,10 @@
 /**
- * Loads the catalogue from data/catalogue.json and creates the demo accounts.
+ * Loads the catalogue from data/catalogue.json, creates the demo accounts and gives the
+ * demo shopper an order history (scripts/demoOrders.js).
  *
- *   npm run seed            replaces products and reviews, keeps shoppers and orders
- *   npm run seed -- --fresh also removes every account and order
+ *   npm run seed            replaces products and reviews, refreshes the demo orders,
+ *                           keeps every other account and order
+ *   npm run seed -- --fresh also removes every account and order first
  *
  * Kept orders still count after a reseed: sold counts and reserved stock follow them, and
  * product ids are never handed out twice, so an old order never points at a new product.
@@ -10,12 +12,13 @@
 import { readFile } from 'node:fs/promises'
 import env from '../config/env.js'
 import { connectDB, disconnectDB } from '../config/db.js'
-import { syncSequence } from '../models/counter.js'
+import Counter, { syncSequence } from '../models/counter.js'
 import Order from '../models/order.js'
 import Product from '../models/product.js'
 import Review from '../models/review.js'
 import User from '../models/user.js'
 import { buildSeedHistory } from '../services/pricePredict.js'
+import { seedDemoOrders } from './demoOrders.js'
 
 const fresh = process.argv.includes('--fresh')
 
@@ -125,21 +128,37 @@ export async function seedAccounts() {
   }
 }
 
-async function run() {
-  const catalogue = JSON.parse(await readFile(new URL('../data/catalogue.json', import.meta.url), 'utf8'))
+export function readCatalogue() {
+  return readFile(new URL('../data/catalogue.json', import.meta.url), 'utf8').then(JSON.parse)
+}
 
-  await connectDB()
-
+/**
+ * The whole seed. The demo orders are written before the catalogue is loaded, so that
+ * applyKeptOrders counts them along with every other kept order.
+ */
+export async function seed(catalogue, { fresh = false, now = Date.now() } = {}) {
   if (fresh) {
-    await Promise.all([User.deleteMany({}), Order.deleteMany({})])
-    console.log('Removed every account and order')
+    // With no order left, the numbers can start again from SS100001.
+    await Promise.all([User.deleteMany({}), Order.deleteMany({}), Counter.deleteOne({ _id: 'order' })])
   }
 
-  await seedCatalogue(catalogue)
   await seedAccounts()
+  const shopper = await User.findOne({ email: env.seedShopperEmail })
+  const demoOrders = await seedDemoOrders(catalogue, shopper, now)
+  await seedCatalogue(catalogue, now)
+  return { demoOrders }
+}
+
+async function run() {
+  const catalogue = await readCatalogue()
+
+  await connectDB()
+  const { demoOrders } = await seed(catalogue, { fresh })
   await Promise.all([Product, Review, User, Order].map((model) => model.syncIndexes()))
 
+  if (fresh) console.log('Removed every account and order first')
   console.log(`Seeded ${catalogue.length} products and ${await Review.countDocuments()} reviews`)
+  console.log(`Wrote ${demoOrders.length} demo orders for ${env.seedShopperEmail}, placed over the last two weeks`)
   demoAccounts.forEach((account) => {
     console.log(`  ${account.role.padEnd(8)} ${account.email} / ${account.password}`)
   })
