@@ -58,6 +58,10 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    // Each list is always replaced whole, never edited by position. Versioning them would
+    // make a cart save and a wishlist save sent at the same moment (each list has its own
+    // debounce in the client) fail with a VersionError instead of both being stored.
+    skipVersioning: { cart: true, wishlist: true, recentlyViewed: true },
     toJSON: {
       transform(doc, ret) {
         delete ret.password

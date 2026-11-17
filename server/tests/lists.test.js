@@ -106,4 +106,22 @@ describe('/api/lists', () => {
     const res = await api().post('/api/lists/merge').set(bearer(token)).expect(200)
     assert.deepEqual(res.body.wishlist, [idOf(1)])
   })
+
+  it('saves different lists sent at the same moment', async () => {
+    // Each list has its own debounce in the client, and a sign out flushes them together.
+    const { token } = await createUser()
+    for (let round = 0; round < 3; round += 1) {
+      const [cart, wishlist, viewed] = await Promise.all([
+        api().put('/api/lists/cart').set(bearer(token)).send({ items: [{ id: idOf(round), quantity: 1 }] }),
+        api().put('/api/lists/wishlist').set(bearer(token)).send({ ids: [idOf(round + 1)] }),
+        api().put('/api/lists/viewed').set(bearer(token)).send({ ids: [idOf(round + 2)] })
+      ])
+      assert.deepEqual([cart.status, wishlist.status, viewed.status], [200, 200, 200])
+
+      const lists = await api().get('/api/lists').set(bearer(token)).expect(200)
+      assert.deepEqual(lists.body.cart, [{ id: idOf(round), quantity: 1 }])
+      assert.deepEqual(lists.body.wishlist, [idOf(round + 1)])
+      assert.deepEqual(lists.body.recentlyViewed, [idOf(round + 2)])
+    }
+  })
 })
