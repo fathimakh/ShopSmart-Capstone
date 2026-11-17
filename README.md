@@ -54,7 +54,7 @@ behind it in `server/`:
 | Price history | Rebuilt in the browser from the discount | Twelve weekly prices stored per product by the seed, a new point on every admin price change, and the forecast worked out on the server |
 | Gemini | Called from the browser, key visible in the bundle | Called only by the server (`server/services/gemini.js`). The key never reaches the browser. AI review summaries are new |
 | Admin | None | `/admin`: dashboard, products, orders and accounts, behind the admin role in the API and in the UI |
-| Tests | None | 156 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
+| Tests | None | 158 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
 | Hosting | Netlify static site ([shopsmart-project.netlify.app](https://shopsmart-project.netlify.app)) | Render web service for the API, Render static site for the client, MongoDB Atlas, all described in [`render.yaml`](render.yaml) ([shopsmart-capstone-web.onrender.com](https://shopsmart-capstone-web.onrender.com)) |
 
 ## What it does
@@ -377,7 +377,7 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 
 | Check | Command | Result |
 |---|---|---|
-| API tests (`node:test` + supertest against a real MongoDB, Gemini stubbed) | `cd server && npm test` | **156 / 156 passing** in 12 files |
+| API tests (`node:test` + supertest against a real MongoDB, Gemini stubbed) | `cd server && npm test` | **158 / 158 passing** in 12 files |
 | Client tests (Vitest + Testing Library in jsdom) | `cd client && npm test` | **244 / 244 passing** in 48 files |
 | Client production build | `cd client && npm run build` | builds without warnings |
 | Browser run with Playwright (the screenshots below) | scripts kept outside the repository | no console errors or warnings, no failed API requests |
@@ -572,7 +572,7 @@ Render setup has been checked.
 | Backend with Node.js, Express and MongoDB | `server/app.js`, `server/routes/`, `server/controllers/`, Mongoose models in `server/models/` |
 | Authentication | JWT (`server/utils/generateToken.js`, `server/middleware/auth.js`), bcrypt (`server/models/user.js`), sign in and sign up pages, `client/src/context/AuthContext.jsx` |
 | Authorisation and business logic | Admin role (`authorize('admin')`, `ProtectedRoute`), checkout pricing and stock reservation (`createOrder` in `server/controllers/orderController.js`), status steps, one review per product with verified purchases and a blended rating, the demo account lock |
-| Backend CRUD, tested | Products, orders, reviews, saved lists and accounts; 156 API tests in `server/tests/` |
+| Backend CRUD, tested | Products, orders, reviews, saved lists and accounts; 158 API tests in `server/tests/` |
 | Frontend consumes the API | `client/src/services/http.js`, used by the service files (catalogue, price history, orders, reviews, AI, admin) and by the auth and shop contexts (session, saved lists) |
 | At least one AI tool, matched to the domain | Google Gemini API: natural language product search and review summaries (`server/services/`). Also TF-IDF recommendations and a regression price forecast |
 | A working, visible AI feature | Assistant page, AI search box, review summary panel, "Recommended for you" (appears after viewing a product), "Similar products", price outlook. Gemini needs `GEMINI_API_KEY` on the server; without it the on-device parser answers, so the search always responds |
