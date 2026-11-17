@@ -248,11 +248,14 @@ ShopSmart-Capstone/
 ## Run it locally
 
 Requirements: **Node.js 22** (the version in `.nvmrc`), npm, and **MongoDB** (Docker, a local
-install or Atlas). Clone the repository and open a terminal in its folder.
+install or Atlas; the tests need a local one). Clone the repository and open a terminal in its
+folder.
 
 ```bash
 # 1. MongoDB on port 27017 (skip if one is already running)
 docker run -d --name shopsmart-mongo -p 27017:27017 mongo:7
+#    If the container exists but has stopped, after a restart for example, docker run
+#    says the name is in use. Start it again instead: docker start shopsmart-mongo
 
 # 2. API on http://localhost:5050
 cd server
@@ -267,10 +270,12 @@ npm ci
 npm run dev
 ```
 
-The client needs no env file in development: it calls `/api` and Vite forwards it to
-`http://localhost:5050`. Copy `client/.env.example` to `client/.env.local` only to point that
-proxy somewhere else or to build for a separately hosted API. `http://localhost:5050/api/health`
-answers with `"status":"ok"`, `"db":"connected"` and `"ai":false`.
+`npm run dev` in `client` also opens the site in your browser. If port 3000 is taken, Vite
+picks the next free port, which works the same. The client needs no env file in development:
+it calls `/api` and Vite forwards it to `http://localhost:5050`. Copy `client/.env.example` to
+`client/.env.local` only to point that proxy somewhere else or to build for a separately hosted
+API. `http://localhost:5050/api/health` answers with `"status":"ok"`, `"db":"connected"` and
+`"ai":false`.
 
 The `JWT_SECRET` in `.env.example` is fine on your own machine; a production server refuses
 it. To make a real one:
@@ -281,8 +286,9 @@ node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 
 For the Gemini features, put a key from [Google AI Studio](https://aistudio.google.com/apikey)
 in `server/.env` as `GEMINI_API_KEY` and restart the API; `/api/health` then says
-`"ai":true`. Without it everything else works, AI search answers on the device and the review
-summary is hidden.
+`"ai":true`, which only shows that a key is set (see "Known limitations"). Without it
+everything else works, AI search answers on the device and a short note takes the place of
+the review summary.
 
 | Folder | Script | What it does |
 |---|---|---|
@@ -292,7 +298,7 @@ summary is hidden.
 | `server` | `npm run seed -- --fresh` | Also removes every account and order first; order numbers start again at `SS100001` |
 | `server` | `npm run snapshot` | Downloads the DummyJSON catalogue again into `data/catalogue.json` (needs internet) |
 | `server` | `npm test` | API tests |
-| `client` | `npm run dev` | Vite dev server on port 3000 |
+| `client` | `npm run dev` | Vite dev server on port 3000 (or the next free one), opened in the browser |
 | `client` | `npm run build` | Production build into `client/dist` |
 | `client` | `npm run preview` | Serves the build on port 4173, with the same `/api` proxy |
 | `client` | `npm test` | Client tests (`npm run test:watch` to keep them running) |
@@ -361,10 +367,12 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 | Browser run with Playwright (the screenshots below) | scripts kept outside the repository | no console errors or warnings, no failed API requests |
 | Layout at 375, 768 and 1920 px (19 shop, shopper and admin pages) | Playwright | no horizontal scrolling, no console errors or warnings |
 
-The API tests need a MongoDB at `mongodb://127.0.0.1:27017`, or `TEST_MONGO_BASE_URI` for one
-elsewhere. Each file creates and drops its own `shopsmart_test_*` database, so the
-development data is never touched, and Gemini is replaced by a stub, so no test calls Google.
-They cover:
+The API tests need a MongoDB at `mongodb://127.0.0.1:27017`. Atlas is fine for running the
+app, but each test file creates and drops its own `shopsmart_test_*` database, so the tests
+need a local or throwaway MongoDB, such as the Docker one in step 1. For one on another port,
+27018 for example, run `TEST_MONGO_BASE_URI=mongodb://127.0.0.1:27018 npm test` or set
+`TEST_MONGO_BASE_URI` in `server/.env`; it is never taken from `MONGO_URI`. The development
+data is never touched, and Gemini is replaced by a stub, so no test calls Google. They cover:
 
 - **Auth:** sign up, sign in, the session check, profile and password changes, signing out
   on one or every device, and each `401` code (expired, invalid, revoked, deleted account).
@@ -439,9 +447,10 @@ client (`shopsmart-capstone-web`, a static site from `client/`). Both pin Node.j
 `NODE_VERSION`.
 
 1. **MongoDB Atlas** ([getting started](https://www.mongodb.com/docs/atlas/getting-started/)).
-   Create a free cluster and a database user. Under network access allow `0.0.0.0/0`, because
-   a free Render service has no fixed outgoing address. Copy the connection string and add the
-   database name:
+   Create a free cluster and a database user. Under network access allow `0.0.0.0/0`. That is
+   the simplest choice for Render, whose outgoing traffic comes from shared regional IP ranges
+   (listed under the service's **Connect → Outbound**) rather than one fixed address. Copy the
+   connection string and add the database name:
    `mongodb+srv://<user>:<password>@<cluster>.mongodb.net/shopsmart?retryWrites=true&w=majority`.
    Special characters in the password must be URL-encoded.
 2. **Push this repository to GitHub**, then in the Render dashboard choose
@@ -460,11 +469,12 @@ client (`shopsmart-capstone-web`, a static site from `client/`). Both pin Node.j
    taken, so compare each service's URL with the two values above. If one differs, correct
    `CLIENT_URL` on the API or `VITE_API_URL` on the site under the service's **Environment**
    page and save with **Save, rebuild, and deploy**. The site needs that new build, because
-   Vite writes `VITE_API_URL` into the bundle. `CLIENT_URL` must be the bare origin (no path,
-   no trailing slash); if it is missing or is not an origin, the API refuses to start and the
+   Vite writes `VITE_API_URL` into the bundle. `CLIENT_URL` must be the bare origin (scheme
+   and host, no path); if it is missing or is not an origin, the API refuses to start and the
    deploy log says why.
-4. **Seed Atlas once from your own computer.** Free services have no shell, no one-off jobs
-   and no pre-deploy command, so the seed cannot run on Render:
+4. **Seed Atlas from your own computer.** Free services have no shell, no one-off jobs and no
+   pre-deploy command, and the demo orders need a fresh seed before each demo, so the seed
+   runs from your own computer:
 
    ```bash
    cd server
@@ -477,20 +487,24 @@ client (`shopsmart-capstone-web`, a static site from `client/`). Both pin Node.j
    The output lists 194 products, 582 reviews, 16 demo orders and both accounts. Keep
    `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `server/.env` at `admin@shopsmart.dev` and
    `Admin@1234`, which the Store Admin button uses. Run the same command again before a demo
-   to bring the demo orders back into the dashboard's two-week chart.
+   to bring the demo orders back into the dashboard's two-week chart. It also replaces the
+   products and reviews, so reviews written by visitors and admin product edits are lost (see
+   "Demo data").
 5. **Check it.** `https://<api>.onrender.com/api/health` should answer `"db":"connected"`.
    Open the site and sign in with both demo buttons. Then put the two live URLs and the
    repository link in the table at the top of this README.
 6. **Gemini key, later.** Add `GEMINI_API_KEY` on the API's Environment page and save with
    **Save and deploy**. `/api/health` then says `"ai":true`, and the client picks it up within
-   five minutes with no rebuild. Until then AI search answers on the device and the review
-   summary is hidden.
+   five minutes with no rebuild. Then try one search on the assistant page: the answer should
+   say "Read by Gemini on the ShopSmart server". Until then AI search answers on the device
+   and a short note takes the place of the review summary.
 
-**Redeploying.** Both services have `autoDeployTrigger: commit`, so every push to the
-linked branch rebuilds and deploys them. A service can also be deployed by hand from its
-Deploys page (**Manual Deploy → Deploy latest commit**). After an environment change, Render's
-save menu offers **Save, rebuild, and deploy** (needed for the static site) or **Save and
-deploy** (enough for the API).
+**Redeploying.** Both services have `autoDeployTrigger: commit` and a `rootDir`, so a push to
+the linked branch rebuilds and deploys each service whose folder (`server/` or `client/`) it
+changes. A push that only touches the README or `docs/` deploys nothing. A service can also be
+deployed by hand from its Deploys page (**Manual Deploy → Deploy latest commit**). After an
+environment change, Render's save menu offers **Save, rebuild, and deploy** (needed for the
+static site) or **Save and deploy** (enough for the API).
 
 **Cold start.** A [free web service](https://render.com/docs/free) spins down after 15
 minutes without traffic and takes about a minute to start again. The client gives the first
