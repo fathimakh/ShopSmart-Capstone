@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { FiMinusCircle, FiPlusCircle, FiZap } from 'react-icons/fi'
+import { getAiStatus } from '../../services/ai'
 import { fetchReviewSummary } from '../../services/reviews'
 import { isAbortError } from '../../services/http'
 import { formatDate, pluralize } from '../../utils/format'
@@ -24,8 +25,20 @@ function ReviewSummary({ productId, revision = 0 }) {
       productId
     }))
 
-    fetchReviewSummary(productId, { signal: controller.signal })
-      .then((summary) => setState({ status: summary ? 'ready' : 'none', summary, productId }))
+    // Without a Gemini key on the server the summary request could only fail (and show
+    // as an error in the browser console), so the quiet line is shown straight away.
+    // getAiStatus is cached and shared with the assistant.
+    getAiStatus()
+      .then((enabled) => {
+        if (controller.signal.aborted) return undefined
+        if (enabled === false) {
+          setState({ status: 'unavailable', summary: null, productId })
+          return undefined
+        }
+        return fetchReviewSummary(productId, { signal: controller.signal }).then((summary) =>
+          setState({ status: summary ? 'ready' : 'none', summary, productId })
+        )
+      })
       .catch((error) => {
         if (isAbortError(error)) return
         setState({ status: 'unavailable', summary: null, productId })
