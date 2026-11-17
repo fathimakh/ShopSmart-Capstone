@@ -157,7 +157,8 @@ function Home() {
         products={recommendations}
       />
 
-      <div className="browse-toolbar">
+      {/* The hero's "Browse the catalogue" lands here, at the search, sort and filters. */}
+      <div className="browse-toolbar" id="browse">
         <SearchBar value={query} onChange={setQuery} />
         <label className="browse-sort">
           <span className="visually-hidden">Sort products by</span>

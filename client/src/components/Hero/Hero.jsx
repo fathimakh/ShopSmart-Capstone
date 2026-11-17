@@ -26,7 +26,7 @@ function Hero({ featured, catalogueSize, categoryCount, brandCount }) {
               <FiZap aria-hidden="true" />
               Ask the assistant
             </Link>
-            <a className="btn btn-outline" href="#results-heading">
+            <a className="btn btn-outline" href="#browse">
               Browse the catalogue
               <FiArrowRight aria-hidden="true" />
             </a>

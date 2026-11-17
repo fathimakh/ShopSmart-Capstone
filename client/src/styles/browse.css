@@ -30,9 +30,18 @@
   align-items: start;
 }
 
+/* The filters stay in view below the sticky header. A list taller than the space left
+   above the comparison tray scrolls on its own, so its last checkboxes can still be
+   reached and seen with the keyboard instead of staying under the tray. */
 .browse-sidebar {
   position: sticky;
-  top: calc(var(--header-height) + var(--space-3));
+  top: calc(var(--header-space, var(--header-height)) + var(--space-3));
+  max-height: calc(
+    100vh - var(--header-space, var(--header-height)) - var(--compare-bar-space, 0px) -
+      var(--space-3) * 2
+  );
+  overflow-y: auto;
+  border-radius: var(--radius-lg);
 }
 
 .browse-layout .browse-filter-toggle {
@@ -65,6 +74,8 @@
   .browse-sidebar {
     position: static;
     display: none;
+    max-height: none;
+    overflow-y: visible;
   }
 
   .browse-sidebar.is-open {

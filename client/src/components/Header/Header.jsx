@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
 import {
   FiColumns,
@@ -27,6 +27,11 @@ const navLinks = [
   { to: '/cart', label: 'Cart', icon: FiShoppingCart, countKey: 'cartCount' }
 ]
 
+// The header sticks to the top of the screen, and its height changes with the width and
+// with account notes. It is shared as a CSS variable so the browser scrolls whatever it
+// brings into view (the focused control, an in-page link's target) clear of it.
+const SPACE_VARIABLE = '--header-space'
+
 const adminLink = { to: '/admin', label: 'Admin', icon: FiSettings, countKey: null }
 const accountLink = { to: '/account', label: 'Account', icon: FiUser, countKey: null }
 const signInLink = { to: '/login', label: 'Sign in', icon: FiLogIn, countKey: null }
@@ -36,6 +41,7 @@ function Header() {
   const location = useLocation()
   const counts = useShop()
   const { user, status, isAdmin } = useAuth()
+  const header = useRef(null)
 
   // A stored session that is still being checked shows Account rather than flashing
   // Sign in for a moment.
@@ -51,6 +57,19 @@ function Header() {
   }, [location.pathname])
 
   useEffect(() => {
+    const element = header.current
+    const root = document.documentElement
+    const measure = () => root.style.setProperty(SPACE_VARIABLE, `${element.offsetHeight}px`)
+    measure()
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    if (observer) observer.observe(element)
+    return () => {
+      if (observer) observer.disconnect()
+      root.style.removeProperty(SPACE_VARIABLE)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!menuOpen) return undefined
 
     const closeOnEscape = (event) => {
@@ -62,7 +81,7 @@ function Header() {
   }, [menuOpen])
 
   return (
-    <header className="header">
+    <header className="header" ref={header}>
       <p className="header-strip">
         <FiTruck aria-hidden="true" />
         Free delivery over $150

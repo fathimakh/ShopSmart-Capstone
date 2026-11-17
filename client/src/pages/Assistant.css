@@ -90,7 +90,6 @@
 
 .assistant-bubble.is-user {
   align-self: flex-end;
-  scroll-margin-top: calc(var(--header-height) + var(--space-4));
   border-radius: var(--radius-md) var(--radius-md) var(--space-1) var(--radius-md);
   background-color: var(--color-primary);
   border-color: var(--color-primary);
