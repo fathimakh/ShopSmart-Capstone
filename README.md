@@ -15,7 +15,7 @@ dashboard, products, orders and accounts.
 |---|---|
 | **Live website** | Added after the first deploy |
 | **Live API** | Added after the first deploy |
-| **Repository** | Added after the first push to GitHub (planned name: fathimakh/ShopSmart-Capstone) |
+| **Repository** | https://github.com/fathimakh/ShopSmart-Capstone |
 | **Demo shopper** | `demo@shopsmart.dev` / `Demo@1234` (16 demo orders) |
 | **Demo admin** | `admin@shopsmart.dev` / `Admin@1234` |
 
@@ -256,7 +256,12 @@ ShopSmart-Capstone/
 
 Requirements: **Node.js 22** (the version in `.nvmrc`), npm, and **MongoDB** (Docker, a local
 install or Atlas; the tests need a local one). Clone the repository and open a terminal in its
-folder.
+folder:
+
+```bash
+git clone https://github.com/fathimakh/ShopSmart-Capstone.git
+cd ShopSmart-Capstone
+```
 
 ```bash
 # 1. MongoDB on port 27017 (skip if one is already running)
