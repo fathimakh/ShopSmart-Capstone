@@ -113,6 +113,10 @@ export function ShopProvider({ children }) {
   const syncRef = useRef(null)
   if (!syncRef.current) syncRef.current = createSyncState()
 
+  // Read by the cart actions, which may run several times before the next render.
+  const productsRef = useRef(products)
+  productsRef.current = products
+
   const storageSetters = useRef(null)
   storageSetters.current = {
     cart: setStoredCart,
@@ -417,39 +421,61 @@ export function ShopProvider({ children }) {
   // resetting the whole sync then would start a second merge of the same guest lists.
   useEffect(() => () => Object.values(syncRef.current.timers).forEach(clearTimeout), [])
 
+  /**
+   * The most units of a product the cart may hold: what is in stock, up to 99. Checkout
+   * would refuse more, so the cart never takes more. A product the catalogue has not
+   * loaded yet is only held to 99.
+   */
+  const cartLimitFor = useCallback((productId) => {
+    const product = productsRef.current.find((entry) => entry.id === productId)
+    return product ? Math.min(product.stock, MAX_QUANTITY) : MAX_QUANTITY
+  }, [])
+
+  /**
+   * Adds units of a product and returns how many were added: fewer than asked once the
+   * cart holds all the stock, and 0 for a sold out product or a full cart.
+   */
   const addToCart = useCallback(
     (productId, quantity = 1) => {
-      let added = true
+      const limit = cartLimitFor(productId)
+      let added = 0
       changeList('cart', (current) => {
-        if (current.some((item) => item.id === productId)) {
+        const line = current.find((item) => item.id === productId)
+        const held = line ? line.quantity : 0
+        added = Math.max(Math.min(held + clampQuantity(quantity), limit) - held, 0)
+        if (!added) return current
+        if (line) {
           return current.map((item) =>
-            item.id === productId
-              ? { ...item, quantity: clampQuantity(item.quantity + quantity) }
-              : item
+            item.id === productId ? { ...item, quantity: held + added } : item
           )
         }
         // The account keeps up to 50 lines; a fuller cart would be refused as a whole.
         if (current.length >= CART_LINE_LIMIT) {
-          added = false
+          added = 0
           return current
         }
-        return [...current, { id: productId, quantity: clampQuantity(quantity) }]
+        return [...current, { id: productId, quantity: added }]
       })
       return added
     },
-    [changeList]
+    [changeList, cartLimitFor]
   )
 
   const updateQuantity = useCallback(
     (productId, quantity) => {
       if (quantity < 1) return
+      const limit = cartLimitFor(productId)
       changeList('cart', (current) =>
-        current.map((item) =>
-          item.id === productId ? { ...item, quantity: clampQuantity(quantity) } : item
-        )
+        current.map((item) => {
+          if (item.id !== productId) return item
+          const wanted = clampQuantity(quantity)
+          // Lowering always works, even on a line over the stock left; raising stops at it.
+          if (wanted <= item.quantity) return { ...item, quantity: wanted }
+          return { ...item, quantity: Math.max(Math.min(wanted, limit), item.quantity) }
+        })
       )
     },
-    [changeList]
+    [changeList, cartLimitFor]
   )
 
   const removeFromCart = useCallback(

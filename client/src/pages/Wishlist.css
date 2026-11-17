@@ -10,6 +10,28 @@
   flex-wrap: wrap;
 }
 
+.wishlist-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
+.wishlist-note:empty {
+  display: none;
+}
+
+.wishlist-note a {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
 @media (max-width: 480px) {
   .wishlist-actions .btn {
     flex: 1;

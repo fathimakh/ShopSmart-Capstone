@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FiHeart } from 'react-icons/fi'
+import { FiHeart, FiShoppingCart } from 'react-icons/fi'
 import { useShop } from '../context/ShopContext'
 import { useCatalog } from '../context/CatalogContext'
 import ProductGrid from '../components/ProductGrid/ProductGrid'
@@ -10,8 +11,9 @@ import usePageTitle from '../hooks/usePageTitle'
 
 function Wishlist() {
   usePageTitle('Wishlist')
-  const { wishlistItems, clearWishlist, addToCart } = useShop()
+  const { wishlistItems, clearWishlist, addToCart, isInCart } = useShop()
   const { status } = useCatalog()
+  const [note, setNote] = useState(null)
 
   if (status === 'loading') {
     return (
@@ -41,6 +43,30 @@ function Wishlist() {
 
   const wishlistValue = wishlistItems.reduce((total, item) => total + item.price, 0)
 
+  // Adds one of each saved product the cart does not have yet, and says what it left
+  // out: checkout would refuse a sold out product, and a product already in the cart
+  // keeps the quantity the shopper chose. The wishlist itself stays as it is.
+  const addEverything = () => {
+    let added = 0
+    let already = 0
+    let cartFull = false
+    const soldOut = []
+
+    wishlistItems.forEach((item) => {
+      if (item.stock < 1) soldOut.push(item.title)
+      else if (isInCart(item.id)) already += 1
+      else if (addToCart(item.id)) added += 1
+      else cartFull = true
+    })
+
+    const parts = []
+    if (added) parts.push(`Added ${pluralize(added, 'product')} to your cart.`)
+    if (already) parts.push(`${pluralize(already, 'product was', 'products were')} already in your cart.`)
+    if (soldOut.length) parts.push(`Sold out: ${soldOut.join(', ')}.`)
+    if (cartFull) parts.push('Your cart is full, so some products were left out.')
+    setNote({ text: parts.join(' '), added })
+  }
+
   return (
     <div className="container wishlist">
       <div className="section-heading">
@@ -51,17 +77,22 @@ function Wishlist() {
       </div>
 
       <div className="wishlist-actions">
-        <button
-          type="button"
-          className="btn btn-primary"
-          onClick={() => wishlistItems.forEach((item) => addToCart(item.id))}
-        >
-          Move everything to cart
+        <button type="button" className="btn btn-primary" onClick={addEverything}>
+          Add everything to cart
         </button>
         <button type="button" className="btn btn-outline" onClick={clearWishlist}>
           Clear wishlist
         </button>
       </div>
+      <p className="wishlist-note" role="status">
+        {note ? note.text : ''}
+        {note && note.added ? (
+          <Link to="/cart">
+            <FiShoppingCart aria-hidden="true" />
+            Go to cart
+          </Link>
+        ) : null}
+      </p>
 
       <ProductGrid products={wishlistItems} />
     </div>

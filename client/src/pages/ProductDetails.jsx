@@ -18,8 +18,7 @@ import './ProductDetails.css'
 function ProductDetails() {
   const { id } = useParams()
   const { products, status } = useCatalog()
-  const { addToCart, isInCart, isWishlisted, toggleWishlist, recordView, maxQuantity } =
-    useShop()
+  const { cart, addToCart, isWishlisted, toggleWishlist, recordView, maxQuantity } = useShop()
   const [activeImage, setActiveImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
@@ -82,6 +81,14 @@ function ProductDetails() {
   }
 
   const soldOut = product.stock < 1
+  const cartLine = cart.find((line) => line.id === product.id)
+  const inCart = cartLine ? cartLine.quantity : 0
+  // Checkout refuses more than the stock left, so the cart never takes more either.
+  const room = Math.max(Math.min(product.stock, maxQuantity) - inCart, 0)
+  const chosen = Math.max(Math.min(quantity, room), 1)
+  let cartLabel = inCart ? 'Add more' : 'Add to cart'
+  if (soldOut) cartLabel = 'Sold out'
+  else if (!room) cartLabel = inCart >= product.stock ? 'All in your cart' : 'Cart limit reached'
 
   return (
     <div className="container product-details">
@@ -137,23 +144,17 @@ function ProductDetails() {
           <p className="product-summary-description">{product.description}</p>
 
           <div className="product-actions">
-            {soldOut ? null : (
-              <QuantityStepper
-                value={quantity}
-                max={Math.min(product.stock, maxQuantity)}
-                onChange={setQuantity}
-              />
-            )}
+            {room ? <QuantityStepper value={chosen} max={room} onChange={setQuantity} /> : null}
             <button
               type="button"
               className="btn btn-primary product-actions-cart"
-              onClick={() => addToCart(product.id, quantity)}
-              disabled={soldOut}
+              onClick={() => addToCart(product.id, chosen)}
+              disabled={!room}
             >
               <FiShoppingCart aria-hidden="true" />
-              {soldOut ? 'Sold out' : isInCart(product.id) ? 'Add more' : 'Add to cart'}
+              {cartLabel}
             </button>
-            {isInCart(product.id) ? (
+            {inCart ? (
               <Link className="btn btn-outline product-actions-cart" to="/cart">
                 <FiCheck aria-hidden="true" />
                 Go to cart
@@ -180,7 +181,8 @@ function ProductDetails() {
             <li>
               <FiPackage aria-hidden="true" />
               <span>
-                {soldOut ? 'Out of stock for now' : `${product.availability} - ${product.stock} left in stock`}
+                {soldOut ? 'Out of stock for now' : `${product.availability} - ${product.stock} left`}
+                {inCart ? `, ${inCart} in your cart` : ''}
               </span>
             </li>
             <li>

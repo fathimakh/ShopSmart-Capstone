@@ -2,14 +2,14 @@ import { StrictMode } from 'react'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { AuthProvider, useAuth } from './AuthContext'
-import { CatalogProvider } from './CatalogContext'
+import { CatalogProvider, useCatalog } from './CatalogContext'
 import { ShopProvider, useShop } from './ShopContext'
 import { setToken } from '../services/http'
 import { fakeApi, fakeToken } from '../test/fakeApi'
 
 const shopper = { _id: '6afb790454cff2253a63b03a', name: 'Demo Shopper', email: 'demo@shopsmart.dev', role: 'customer' }
 const token = fakeToken(Math.floor(Date.now() / 1000) + 3600)
-const product = (id) => ({
+const product = (id, stock = 50) => ({
   id,
   title: `Product ${id}`,
   description: 'A product',
@@ -18,7 +18,7 @@ const product = (id) => ({
   discountPercentage: 0,
   rating: 4,
   reviewCount: 1,
-  stock: 50,
+  stock,
   thumbnail: 'https://cdn.example/thumb.webp',
   availabilityStatus: 'In Stock'
 })
@@ -30,11 +30,14 @@ const store = (key, value) => window.localStorage.setItem(key, JSON.stringify(va
  * An API that keeps one account's lists in memory and behaves like the real endpoints:
  * merge joins lists, every write returns what was kept.
  */
-function fakeServer({ lists = {}, failCart = false } = {}) {
+function fakeServer({ lists = {}, failCart = false, stock = {} } = {}) {
   const account = { cart: [], wishlist: [], recentlyViewed: [], ...lists }
   const state = { failCart }
   const api = fakeApi({
-    'GET /products': () => [200, { success: true, products: Array.from({ length: 60 }, (_, i) => product(i + 1)) }],
+    'GET /products': () => [
+      200,
+      { success: true, products: Array.from({ length: 60 }, (_, i) => product(i + 1, stock[i + 1] ?? 50)) }
+    ],
     'POST /auth/login': () => [200, { success: true, token, user: shopper }],
     'GET /auth/me': () => [200, { success: true, user: shopper }],
     'POST /auth/logout': () => [200, { success: true, message: 'Signed out' }],
@@ -77,7 +80,8 @@ function Providers({ children }) {
   )
 }
 
-const renderShop = () => renderHook(() => ({ shop: useShop(), auth: useAuth() }), { wrapper: Providers })
+const renderShop = () =>
+  renderHook(() => ({ shop: useShop(), auth: useAuth(), catalog: useCatalog() }), { wrapper: Providers })
 
 describe('ShopContext list sync', () => {
   beforeEach(() => setToken(null))
@@ -161,9 +165,45 @@ describe('ShopContext list sync', () => {
     act(() => {
       added = result.current.shop.addToCart(51)
     })
-    expect(added).toBe(false)
+    expect(added).toBe(0)
     expect(result.current.shop.cart).toHaveLength(50)
     expect(result.current.shop.isCartFull).toBe(true)
+  })
+
+  it('keeps the cart within the stock left and says how many units it added', async () => {
+    fakeServer({ stock: { 1: 0, 2: 3 } })
+    store('shopsmart:cart', [{ id: 4, quantity: 2 }])
+    const { result } = renderShop()
+    await waitFor(() => expect(result.current.catalog.status).toBe('ready'))
+
+    const added = []
+    act(() => {
+      added.push(result.current.shop.addToCart(1))
+      added.push(result.current.shop.addToCart(2, 2))
+      added.push(result.current.shop.addToCart(2, 2))
+      added.push(result.current.shop.addToCart(2))
+    })
+    // Product 1 is sold out; product 2 stops at the 3 in stock.
+    expect(added).toEqual([0, 2, 1, 0])
+    expect(result.current.shop.cart).toEqual([
+      { id: 4, quantity: 2 },
+      { id: 2, quantity: 3 }
+    ])
+
+    act(() => result.current.shop.updateQuantity(2, 5))
+    expect(result.current.shop.cart[1]).toEqual({ id: 2, quantity: 3 })
+  })
+
+  it('lets a line over the stock left be lowered but not raised', async () => {
+    fakeServer({ stock: { 2: 3 } })
+    store('shopsmart:cart', [{ id: 2, quantity: 6 }])
+    const { result } = renderShop()
+    await waitFor(() => expect(result.current.catalog.status).toBe('ready'))
+
+    act(() => result.current.shop.updateQuantity(2, 7))
+    expect(result.current.shop.cart).toEqual([{ id: 2, quantity: 6 }])
+    act(() => result.current.shop.updateQuantity(2, 5))
+    expect(result.current.shop.cart).toEqual([{ id: 2, quantity: 5 }])
   })
 
   it('takes the account copy on a return visit but sends changes that never reached it', async () => {
