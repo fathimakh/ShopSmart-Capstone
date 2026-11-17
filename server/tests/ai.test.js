@@ -295,4 +295,52 @@ describe('GET /api/products/:id/review-summary', () => {
     const res = await api().get('/api/products/999999/review-summary').expect(404)
     assert.equal(res.body.code, 'PRODUCT_NOT_FOUND')
   })
+
+  it('writes one summary for shoppers who open the product at the same moment', async (t) => {
+    const fetchMock = stubGemini(t, async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50))
+      return geminiReply(summaryAnswer)
+    })
+    const product = await reviewedProduct()
+
+    const answers = await Promise.all(
+      Array.from({ length: 3 }, () => api().get(`/api/products/${product.id}/review-summary`))
+    )
+    assert.deepEqual(answers.map((res) => res.status), [200, 200, 200])
+    assert.ok(answers.every((res) => res.body.summary.generatedAt === answers[0].body.summary.generatedAt))
+    assert.equal(fetchMock.mock.callCount(), 1)
+  })
+
+  it('stops writing new summaries once the daily budget is spent, but still serves cached ones', async (t) => {
+    const fetchMock = stubGemini(t, () => geminiReply(summaryAnswer))
+    const cachedProduct = await reviewedProduct()
+    await api().get(`/api/products/${cachedProduct.id}/review-summary`).expect(200)
+
+    const dailyMax = env.aiSummaryDailyMax
+    t.after(() => {
+      env.aiSummaryDailyMax = dailyMax
+    })
+    env.aiSummaryDailyMax = 0
+
+    const fresh = await reviewedProduct()
+    const spent = await api().get(`/api/products/${fresh.id}/review-summary`).expect(503)
+    assert.equal(spent.body.code, 'AI_UNAVAILABLE')
+    const cached = await api().get(`/api/products/${cachedProduct.id}/review-summary`).expect(200)
+    assert.equal(cached.body.cached, true)
+    assert.equal(fetchMock.mock.callCount(), 1)
+  })
+
+  it('counts fresh summaries apart from the AI search allowance', async (t) => {
+    stubGemini(t, (url, options) =>
+      geminiReply(options.body.includes('Reviews, newest first') ? summaryAnswer : searchAnswer())
+    )
+    const remaining = (res) => Number(/\br=(\d+)/.exec(res.headers.ratelimit)[1])
+    const search = () => api().post('/api/ai/search').send({ query: 'apple phones with a good camera' }).expect(200)
+
+    const earlier = await search()
+    const product = await reviewedProduct()
+    await api().get(`/api/products/${product.id}/review-summary`).expect(200)
+    const later = await search()
+    assert.equal(remaining(earlier) - remaining(later), 1, 'only the second search is counted')
+  })
 })

@@ -4,7 +4,25 @@ import Review from '../models/review.js'
 import { parseShoppingQuery } from '../services/aiSearch.js'
 import { isGeminiConfigured } from '../services/gemini.js'
 import { SUMMARY_REVIEW_LIMIT, reviewFingerprint, summarizeReviews } from '../services/reviewSummary.js'
+import ApiError from '../utils/ApiError.js'
 import { findProductOr404 } from './productController.js'
+
+// Fresh review summaries spend the same Gemini quota as AI search. Shoppers who open the
+// same product at once share one summary, and a daily budget (AI_SUMMARY_DAILY_MAX) keeps
+// product browsing, or a script walking every product, from using up what search needs.
+const summariesInProgress = new Map()
+const summaryBudget = { day: '', used: 0 }
+
+function takeFromSummaryBudget() {
+  const today = new Date().toISOString().slice(0, 10)
+  if (summaryBudget.day !== today) {
+    summaryBudget.day = today
+    summaryBudget.used = 0
+  }
+  if (summaryBudget.used >= env.aiSummaryDailyMax) return false
+  summaryBudget.used += 1
+  return true
+}
 
 function publicSummary(summary) {
   const { verdict, pros, cons, basedOn, generatedAt } = summary
@@ -59,9 +77,7 @@ export async function serveCachedReviewSummary(req, res, next) {
   next()
 }
 
-/** Second step, behind the AI rate limiter: asks Gemini and caches what it wrote. */
-export async function generateReviewSummary(req, res) {
-  const { product, fingerprint } = res.locals.reviewSummaryJob
+async function writeReviewSummary(product, fingerprint) {
   const reviews = await Review.find({ product: product.id }).sort({ createdAt: -1, _id: -1 }).limit(SUMMARY_REVIEW_LIMIT)
 
   const summary = {
@@ -71,5 +87,23 @@ export async function generateReviewSummary(req, res) {
     fingerprint
   }
   await Product.updateOne({ id: product.id }, { $set: { reviewSummary: summary } })
+  return summary
+}
+
+/** Second step, behind the rate limiter: asks Gemini and caches what it wrote. */
+export async function generateReviewSummary(req, res) {
+  const { product, fingerprint } = res.locals.reviewSummaryJob
+  const key = `${product.id}:${fingerprint}`
+
+  let job = summariesInProgress.get(key)
+  if (!job) {
+    if (!takeFromSummaryBudget()) {
+      throw ApiError.unavailable('Review summaries are paused until tomorrow.', 'AI_UNAVAILABLE')
+    }
+    job = writeReviewSummary(product, fingerprint).finally(() => summariesInProgress.delete(key))
+    summariesInProgress.set(key, job)
+  }
+
+  const summary = await job
   res.json({ success: true, summary: publicSummary(summary), cached: false })
 }

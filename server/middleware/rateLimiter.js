@@ -27,3 +27,10 @@ export const aiLimiter = createLimiter(
   env.aiRateLimitMax,
   'The assistant is taking a short break. Please try again in a few minutes.'
 )
+
+// Fresh review summaries are counted on their own, so browsing product pages never uses
+// up the shopper's allowance for the AI search box.
+export const summaryLimiter = createLimiter(
+  env.aiRateLimitMax,
+  'Review summaries are taking a short break. Please try again in a few minutes.'
+)

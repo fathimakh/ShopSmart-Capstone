@@ -56,6 +56,7 @@ const env = {
   clientUrls: toOriginList(process.env.CLIENT_URL || 'http://localhost:3000'),
   authRateLimitMax: toInt(process.env.AUTH_RATE_LIMIT_MAX, 50),
   aiRateLimitMax: toInt(process.env.AI_RATE_LIMIT_MAX, 60),
+  aiSummaryDailyMax: toInt(process.env.AI_SUMMARY_DAILY_MAX, 100),
   geminiApiKey: (process.env.GEMINI_API_KEY || '').trim(),
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   geminiTimeoutMs: toInt(process.env.GEMINI_TIMEOUT_MS, 9000),

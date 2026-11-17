@@ -135,7 +135,10 @@ Counted per IP address over 15 minutes. Going over answers `429 RATE_LIMITED`.
 | Limiter | Applies to | Default limit |
 |---|---|---|
 | Sign in | `POST /api/auth/register`, `POST /api/auth/login`, `PATCH /api/auth/password` (one shared budget) | 50 (`AUTH_RATE_LIMIT_MAX`) |
-| AI | `POST /api/ai/search`, and `GET /api/products/:id/review-summary` only when a new summary has to be written (cached summaries do not count) | 60 (`AI_RATE_LIMIT_MAX`) |
+| AI search | `POST /api/ai/search` | 60 (`AI_RATE_LIMIT_MAX`) |
+| Review summaries | `GET /api/products/:id/review-summary`, only when a new summary has to be written (cached summaries do not count). Counted apart from AI search, so browsing products never uses up the search allowance. | 60 (`AI_RATE_LIMIT_MAX`) |
+
+New review summaries also have a budget for the whole server, `AI_SUMMARY_DAILY_MAX` (100) a day counted from midnight UTC, so that browsing, or a script walking every product, cannot use up the Gemini quota AI search needs. Once it is spent, new summaries answer `503 AI_UNAVAILABLE` until the next day; cached ones are still served.
 
 ### CORS
 
@@ -182,7 +185,7 @@ Browsers may call the API from the origins listed in `CLIENT_URL` (comma separat
 | 429 | `RATE_LIMITED` | Too many requests. See [Rate limits](#rate-limits). |
 | 500 | `SERVER_ERROR` | An unexpected fault. The message is generic. |
 | 502 | `AI_FAILED` | Gemini answered with an error or with something unusable. |
-| 503 | `AI_UNAVAILABLE` | No Gemini key is configured on the server, or Gemini is over its quota. |
+| 503 | `AI_UNAVAILABLE` | No Gemini key is configured on the server, Gemini is over its quota, or (review summaries only) today's `AI_SUMMARY_DAILY_MAX` is spent. |
 | 504 | `AI_TIMEOUT` | Gemini did not answer within `GEMINI_TIMEOUT_MS` (9 seconds by default). |
 
 ---
@@ -749,7 +752,7 @@ Errors: `400 INVALID_ID` ("Invalid product id" or "Invalid review id"), `403 FOR
 
 #### `GET /api/products/:id/review-summary`
 
-Public. Gemini reads the product's newest reviews (up to 50) and writes a short verdict with pros and cons. The summary is cached on the product with a fingerprint of its reviews, so it is written once and served from the cache until a review is added, edited or deleted. Cached answers do not count against the AI rate limit and are served even when no Gemini key is configured.
+Public. Gemini reads the product's newest reviews (up to 50) and writes a short verdict with pros and cons. The summary is cached on the product with a fingerprint of its reviews, so it is written once and served from the cache until a review is added, edited or deleted. Cached answers do not count against the rate limit and are served even when no Gemini key is configured. Requests that arrive while the same summary is being written wait for it and get the same answer, so Gemini is asked once.
 
 **200**, with a summary:
 
@@ -777,7 +780,7 @@ Public. Gemini reads the product's newest reviews (up to 50) and writes a short 
 
 **200**, when the product has no reviews: `{ "success": true, "summary": null, "cached": false }`. Hide the panel.
 
-Errors: `503 AI_UNAVAILABLE` (no key and nothing cached, or Gemini busy), `504 AI_TIMEOUT`, `502 AI_FAILED`, `429 RATE_LIMITED` (only when a new summary was needed), `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`. None of these affect the rest of the product page; hide or collapse the summary panel.
+Errors: `503 AI_UNAVAILABLE` (no key and nothing cached, Gemini busy, or today's `AI_SUMMARY_DAILY_MAX` already spent), `504 AI_TIMEOUT`, `502 AI_FAILED`, `429 RATE_LIMITED` (only when a new summary was needed), `400 INVALID_ID`, `404 PRODUCT_NOT_FOUND`. None of these affect the rest of the product page; hide or collapse the summary panel.
 
 ### 5.6 AI assistant
 
@@ -1149,7 +1152,8 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `JWT_EXPIRES_IN` | `7d` | Token lifetime. |
 | `CLIENT_URL` | `http://localhost:3000` | Allowed browser origins, comma separated. Required in production, where each one must be a bare origin such as `https://shopsmart.onrender.com` (no path, lower case), or the server will not start. |
 | `AUTH_RATE_LIMIT_MAX` | `50` | Sign in requests per IP per 15 minutes. |
-| `AI_RATE_LIMIT_MAX` | `60` | AI requests per IP per 15 minutes. |
+| `AI_RATE_LIMIT_MAX` | `60` | AI searches per IP per 15 minutes, and separately new review summaries per IP per 15 minutes. |
+| `AI_SUMMARY_DAILY_MAX` | `100` | New review summaries the whole server may ask Gemini for each day (from midnight UTC). Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
 | `GEMINI_API_KEY` | empty | Google Gemini key. Without it the AI endpoints answer `503 AI_UNAVAILABLE`. |
 | `GEMINI_MODEL` | `gemini-2.5-flash` | Gemini model name. |
 | `GEMINI_TIMEOUT_MS` | `9000` | How long to wait for Gemini before `504 AI_TIMEOUT`. |
