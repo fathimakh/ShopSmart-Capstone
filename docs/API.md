@@ -1154,4 +1154,4 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `STORE_TIMEZONE` | `Asia/Kolkata` | IANA time zone for the dashboard's daily sales. The server will not start with an unknown zone. |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | `admin@shopsmart.dev`, `Admin@1234` | The admin account `npm run seed` creates. |
 
-The tests (`npm test`) need a MongoDB at `mongodb://127.0.0.1:27036`, or set `TEST_MONGO_BASE_URI`. Each test file creates and drops its own `shopsmart_test_<name>` database and stubs Gemini, so the tests never touch the development database or call the real API.
+The tests (`npm test`) need a MongoDB at `mongodb://127.0.0.1:27017`. For one elsewhere, set `TEST_MONGO_BASE_URI` (for example `mongodb://127.0.0.1:27036`) in the shell or in `.env`. It is never taken from `MONGO_URI`, so the tests cannot drop databases on a real cluster. Each test file creates and drops its own `shopsmart_test_<name>` database and stubs Gemini, so the tests never touch the development database or call the real API.

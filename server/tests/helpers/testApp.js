@@ -8,8 +8,16 @@
  * Each test file calls useTestDatabase('<name>') and gets its own throw-away database,
  * shopsmart_test_<name>, which is dropped before and after the file runs. The database
  * the app uses in development is never touched.
+ *
+ * The tests expect MongoDB on the standard port. A MongoDB elsewhere can be named with
+ * TEST_MONGO_BASE_URI, in the shell or in .env. It is deliberately not taken from
+ * MONGO_URI, which may point at a real (Atlas) database, because each file drops its own.
  */
 import { after, before } from 'node:test'
+import dotenv from 'dotenv'
+
+// Read now so TEST_MONGO_BASE_URI can come from .env. The values set below still win.
+dotenv.config({ quiet: true })
 
 process.env.NODE_ENV = 'test'
 process.env.JWT_SECRET = 'test-only-secret-for-the-shopsmart-api'
@@ -24,7 +32,7 @@ process.env.GEMINI_MODEL = 'gemini-2.5-flash'
 process.env.GEMINI_TIMEOUT_MS = '2000'
 process.env.STORE_TIMEZONE = 'UTC'
 
-const MONGO_BASE_URI = process.env.TEST_MONGO_BASE_URI || 'mongodb://127.0.0.1:27036'
+const MONGO_BASE_URI = process.env.TEST_MONGO_BASE_URI || 'mongodb://127.0.0.1:27017'
 
 // A test that forgets to stub Gemini fails loudly instead of calling the real API.
 globalThis.fetch = async (url) => {
