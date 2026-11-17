@@ -61,12 +61,26 @@ function outOfStock(items) {
   return new ApiError(409, message, { code: 'OUT_OF_STOCK', details: { items } })
 }
 
-/** Puts reserved units back on the shelf: a failed checkout or a cancelled order. */
+/**
+ * Puts reserved units back on the shelf: a failed checkout or a cancelled order. The
+ * schema's min: 0 does not apply to an update, so soldCount is kept from going below zero
+ * here, for an order whose units were never counted (one restored from a backup, say).
+ */
 async function restock(items) {
   if (!items.length) return
   await Product.bulkWrite(
     items.map(({ id, quantity }) => ({
-      updateOne: { filter: { id }, update: { $inc: { stock: quantity, soldCount: -quantity } } }
+      updateOne: {
+        filter: { id },
+        update: [
+          {
+            $set: {
+              stock: { $add: ['$stock', quantity] },
+              soldCount: { $max: [0, { $subtract: ['$soldCount', quantity] }] }
+            }
+          }
+        ]
+      }
     }))
   )
 }

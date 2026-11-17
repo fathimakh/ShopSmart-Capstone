@@ -37,7 +37,7 @@ This document is the contract between the API and the React client. Everything b
 
 Every path in this document is relative to the host, and every endpoint lives under `/api`. The client should read the base URL from `VITE_API_URL` (including the `/api` suffix).
 
-To run it locally: `cd server`, `npm install`, copy `.env.example` to `.env` and fill it in, `npm run seed` (194 products, 582 reviews and two demo accounts), then `npm run dev`.
+To run it locally: `cd server`, `npm install`, copy `.env.example` to `.env` and fill it in, `npm run seed` (194 products, 582 reviews and two demo accounts), then `npm run dev`. Running the seed again replaces the products and reviews but keeps accounts and orders: each product's `soldCount` and reserved stock follow the kept orders, and product ids are never reused. `npm run seed -- --fresh` also removes every account and order.
 
 | Demo account | Email | Password |
 |---|---|---|

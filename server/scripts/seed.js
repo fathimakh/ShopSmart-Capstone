@@ -3,11 +3,14 @@
  *
  *   npm run seed            replaces products and reviews, keeps shoppers and orders
  *   npm run seed -- --fresh also removes every account and order
+ *
+ * Kept orders still count after a reseed: sold counts and reserved stock follow them, and
+ * product ids are never handed out twice, so an old order never points at a new product.
  */
 import { readFile } from 'node:fs/promises'
 import env from '../config/env.js'
 import { connectDB, disconnectDB } from '../config/db.js'
-import Counter, { syncSequence } from '../models/counter.js'
+import { syncSequence } from '../models/counter.js'
 import Order from '../models/order.js'
 import Product from '../models/product.js'
 import Review from '../models/review.js'
@@ -62,8 +65,41 @@ function toReviews(entry) {
   }))
 }
 
+/**
+ * The fresh catalogue starts every product at its catalogue stock with nothing sold, so
+ * the orders kept from before are applied to it: soldCount counts every unit not
+ * cancelled, and units in orders still on their way stay reserved. Cancelling one of
+ * those later then brings the stock back to the catalogue amount, not above it, and
+ * never leaves a negative soldCount.
+ */
+async function applyKeptOrders() {
+  const totals = await Order.aggregate([
+    { $match: { status: { $ne: 'cancelled' } } },
+    { $unwind: '$items' },
+    {
+      $group: {
+        _id: '$items.id',
+        sold: { $sum: '$items.quantity' },
+        reserved: { $sum: { $cond: [{ $in: ['$status', ['processing', 'shipped']] }, '$items.quantity', 0] } }
+      }
+    }
+  ])
+  if (!totals.length) return
+
+  await Product.bulkWrite(
+    totals.map(({ _id, sold, reserved }) => ({
+      updateOne: {
+        filter: { id: _id },
+        update: [{ $set: { soldCount: sold, stock: { $max: [0, { $subtract: ['$stock', reserved] }] } } }]
+      }
+    }))
+  )
+}
+
 export async function seedCatalogue(catalogue, now = Date.now()) {
-  await Promise.all([Product.deleteMany({}), Review.deleteMany({}), Counter.deleteMany({ _id: 'product' })])
+  // The product id counter is kept: an id an admin product had before stays used, because
+  // kept orders, carts and verified purchase checks still refer to it.
+  await Promise.all([Product.deleteMany({}), Review.deleteMany({})])
 
   // timestamps: false keeps the catalogue's own dates, so "newest" sorts as it did before.
   await Product.insertMany(
@@ -72,6 +108,7 @@ export async function seedCatalogue(catalogue, now = Date.now()) {
   )
   await Review.insertMany(catalogue.flatMap(toReviews), { timestamps: false })
   await syncSequence('product', Math.max(...catalogue.map((entry) => entry.id)))
+  await applyKeptOrders()
 }
 
 export async function seedAccounts() {
