@@ -47,6 +47,15 @@ describe('checkout validation', () => {
     expect(validatePayment({ method: 'upi', upiId: 'nope' }).upiId).toBe('Enter a UPI ID such as name@bank')
   })
 
+  it('refuses a card that has expired, and takes one that runs to the end of this month', () => {
+    const card = { method: 'card', cardName: 'Asha Nair', cardNumber: '4242 4242 4242 4242', cvv: '123' }
+    const today = new Date(2026, 10, 17)
+    expect(validatePayment({ ...card, expiry: '01/20' }, today).expiry).toBe('This card has expired')
+    expect(validatePayment({ ...card, expiry: '10/26' }, today).expiry).toBe('This card has expired')
+    expect(validatePayment({ ...card, expiry: '11/26' }, today)).toEqual({})
+    expect(validatePayment({ ...card, expiry: '01/27' }, today)).toEqual({})
+  })
+
   it('fills the delivery form in from the account', () => {
     const user = {
       name: 'Asha Nair',

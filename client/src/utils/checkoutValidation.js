@@ -37,7 +37,15 @@ export function validateDelivery(values) {
   return errors
 }
 
-export function validatePayment(values) {
+// A card works until the end of the month printed on it.
+function hasExpired(expiry, today) {
+  const [month, year] = expiry.split('/').map(Number)
+  const thisYear = today.getFullYear() % 100
+  return year < thisYear || (year === thisYear && month < today.getMonth() + 1)
+}
+
+/** today is only passed by the tests, to check the expiry against a fixed date. */
+export function validatePayment(values, today = new Date()) {
   const errors = {}
 
   if (values.method === 'card') {
@@ -46,6 +54,7 @@ export function validatePayment(values) {
       errors.cardNumber = 'Enter the 16 digit card number'
     }
     if (!EXPIRY_PATTERN.test(values.expiry)) errors.expiry = 'Use the MM/YY format'
+    else if (hasExpired(values.expiry, today)) errors.expiry = 'This card has expired'
     if (digitsOnly(values.cvv).length !== 3) errors.cvv = 'Enter the 3 digit CVV'
   }
 
