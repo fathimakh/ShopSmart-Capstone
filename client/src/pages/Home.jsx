@@ -28,7 +28,7 @@ import { pluralize } from '../utils/format'
 import './Home.css'
 
 function Home() {
-  const { products, status, isSlow, categories, brands } = useCatalog()
+  const { products, status, categories, brands } = useCatalog()
   const { recentlyViewed, wishlist, cart, listsRevision } = useShop()
   const [filters, setFilters] = useState(defaultFilters)
   const [filtersOpen, setFiltersOpen] = useState(false)
@@ -125,12 +125,6 @@ function Home() {
           categoryCount={categories.length}
           brandCount={brands.length}
         />
-      ) : null}
-
-      {isSlow ? (
-        <p className="home-notice" role="status">
-          Waking up the server. The first visit after a quiet spell can take up to a minute.
-        </p>
       ) : null}
 
       <CategoryTiles categories={categoryTiles} />

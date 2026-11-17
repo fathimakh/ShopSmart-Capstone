@@ -5,6 +5,7 @@ import Footer from './components/Footer/Footer'
 import CompareBar from './components/CompareBar/CompareBar'
 import BottomNav from './components/BottomNav/BottomNav'
 import CatalogueError from './components/CatalogueError/CatalogueError'
+import WakeUpNotice from './components/WakeUpNotice/WakeUpNotice'
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute'
 import Home from './pages/Home'
 import { useCatalog } from './context/CatalogContext'
@@ -53,6 +54,7 @@ function App() {
       </a>
       <Header />
       <main id="main-content" className="app-main" tabIndex={-1}>
+        <WakeUpNotice />
         {catalogueFailed ? (
           <CatalogueError />
         ) : (

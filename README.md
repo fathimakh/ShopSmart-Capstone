@@ -23,8 +23,9 @@ The sign in page has **Demo Shopper** and **Store Admin** buttons that sign in w
 accounts in one click. Every visitor shares them, so the API refuses to change their
 password, sign them out of every device, change their role or delete them. The API is set
 up for Render's free plan, which sleeps after 15 minutes without traffic. The first request
-after that takes about a minute; the site waits up to 60 seconds and shows "Waking up the
-server" meanwhile.
+after that takes about a minute. The site gives its first requests up to 60 seconds and, on
+whichever page the visit starts, shows "Waking up the server" once the catalogue has taken
+more than 5 seconds.
 
 ![Home page](docs/screenshots/01-home.jpg)
 
@@ -49,7 +50,7 @@ behind it in `server/`:
 | Price history | Rebuilt in the browser from the discount | Twelve weekly prices stored per product by the seed, a new point on every admin price change, and the forecast worked out on the server |
 | Gemini | Called from the browser, key visible in the bundle | Called only by the server (`server/services/gemini.js`). The key never reaches the browser. AI review summaries are new |
 | Admin | None | `/admin`: dashboard, products, orders and accounts, behind the admin role in the API and in the UI |
-| Tests | None | 150 API tests (`node:test` + supertest) and 243 client tests (Vitest + Testing Library) |
+| Tests | None | 150 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
 | Hosting | Netlify static site | Render web service for the API, Render static site for the client, MongoDB Atlas, all described in [`render.yaml`](render.yaml) |
 
 ## What it does
@@ -355,7 +356,7 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 | Check | Command | Result |
 |---|---|---|
 | API tests (`node:test` + supertest against a real MongoDB, Gemini stubbed) | `cd server && npm test` | **150 / 150 passing** in 12 files |
-| Client tests (Vitest + Testing Library in jsdom) | `cd client && npm test` | **243 / 243 passing** in 47 files |
+| Client tests (Vitest + Testing Library in jsdom) | `cd client && npm test` | **244 / 244 passing** in 48 files |
 | Client production build | `cd client && npm run build` | builds without warnings |
 | Browser run with Playwright (the screenshots below) | scripts kept outside the repository | no console errors or warnings, no failed API requests |
 | Layout at 375, 768 and 1920 px (19 shop, shopper and admin pages) | Playwright | no horizontal scrolling, no console errors or warnings |
@@ -494,9 +495,9 @@ deploy** (enough for the API).
 **Cold start.** A [free web service](https://render.com/docs/free) spins down after 15
 minutes without traffic and takes about a minute to start again. The client gives the first
 requests of a visit (the catalogue, the session check, sign in and sign up) up to 60 seconds,
-shows "Waking up the server" once the catalogue takes more than 5 seconds, and retries the
-session check when the browser comes back online. Opening `/api/health` a minute before a demo
-wakes it up.
+shows "Waking up the server" above the page once the catalogue takes more than 5 seconds,
+and retries the session check when the browser comes back online. Opening `/api/health` a
+minute before a demo wakes it up.
 
 `client/netlify.toml`, `client/public/_redirects` and `client/vercel.json` are SPA rewrite
 files kept from the mini project, for hosting the client on Netlify or Vercel instead.
