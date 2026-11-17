@@ -94,6 +94,8 @@ function Wishlist() {
         ) : null}
       </p>
 
+      {/* Keeps the headings in order: the product cards carry h3 titles. */}
+      <h2 className="visually-hidden">Saved products</h2>
       <ProductGrid products={wishlistItems} />
     </div>
   )

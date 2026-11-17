@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { titleCase } from '../../utils/format'
+import { pluralize, titleCase } from '../../utils/format'
 import './CategoryTiles.css'
 
 // Storefronts lead with categories, so each tile borrows the picture of its best
@@ -25,7 +25,7 @@ function CategoryTiles({ categories, heading = 'Shop by category', subtitle = 'O
                 <img src={thumbnail} alt="" loading="lazy" width="72" height="72" />
               </span>
               <span className="category-tile-name">{titleCase(category)}</span>
-              <span className="category-tile-count">{count} items</span>
+              <span className="category-tile-count">{pluralize(count, 'item')}</span>
             </NavLink>
           </li>
         ))}

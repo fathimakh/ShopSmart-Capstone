@@ -92,6 +92,7 @@ describe('Shopping assistant', () => {
     expect(await screen.findByText('Read on this device, because Gemini is not available on the server right now')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'Laptop Pro' })).toBeInTheDocument()
     expect(screen.getByText('Brand: Apple')).toBeInTheDocument()
+    expect(screen.getByText('Here is 1 product that matches.')).toBeInTheDocument()
   })
 
   it('does not call the search at all when the server has no Gemini key', async () => {

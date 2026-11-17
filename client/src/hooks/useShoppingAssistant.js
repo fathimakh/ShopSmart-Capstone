@@ -19,7 +19,9 @@ function fallbackReply(count) {
   if (!count) {
     return 'I could not find anything for that. Try a wider price range or a different category.'
   }
-  return `Here ${count === 1 ? 'is' : 'are'} ${pluralize(count, 'product')} that fit.`
+  return count === 1
+    ? 'Here is 1 product that matches.'
+    : `Here are ${pluralize(count, 'product')} that match.`
 }
 
 /**

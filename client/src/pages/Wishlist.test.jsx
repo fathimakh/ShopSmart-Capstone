@@ -24,6 +24,8 @@ describe('Wishlist', () => {
     renderShopPage(<Wishlist />, { path: '/wishlist' })
 
     fireEvent.click(await screen.findByRole('button', { name: 'Add everything to cart' }))
+    // An h2 sits between the page's h1 and the cards' h3 titles.
+    expect(screen.getByRole('heading', { level: 2, name: 'Saved products' })).toBeInTheDocument()
 
     expect(
       screen.getByText('Added 1 product to your cart. 1 product was already in your cart. Sold out: Sold Vase.')
