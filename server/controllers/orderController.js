@@ -3,9 +3,13 @@ import Order, {
   CANCELLABLE_STATUSES,
   DELIVERY_DAYS,
   NEXT_STATUS,
-  ORDER_NUMBER_PREFIX,
   ORDER_STATUSES,
-  calculateTotals
+  STATUS_NOTES,
+  calculateTotals,
+  formatOrderNumber,
+  highestOrderSequence,
+  originalPriceOf,
+  shopperCancelNote
 } from '../models/order.js'
 import Product from '../models/product.js'
 import User from '../models/user.js'
@@ -13,29 +17,11 @@ import ApiError from '../utils/ApiError.js'
 import { buildPagination, createQueryReader, escapeRegex } from '../utils/queryReader.js'
 
 const DAY = 24 * 60 * 60 * 1000
-// The first order is SS100001, so every number has the same length on a receipt.
-const ORDER_NUMBER_OFFSET = 100000
 const NUMBER_ATTEMPTS = 3
 const USER_SUMMARY = 'name email'
 
 // The store can cancel an order until it is delivered, that is while it still has a next step.
 const STORE_CANCELLABLE_STATUSES = Object.keys(NEXT_STATUS)
-
-const STATUS_NOTES = {
-  shipped: 'Handed to the courier',
-  delivered: 'Delivered',
-  cancelled: 'Cancelled by the store'
-}
-
-function roundCurrency(value) {
-  return Math.round(value * 100) / 100
-}
-
-// The same rule the storefront uses to show the struck-through price.
-function originalPriceOf(product) {
-  const discount = product.discountPercentage || 0
-  return discount ? roundCurrency(product.price / (1 - discount / 100)) : product.price
-}
 
 function digitsOnly(value) {
   return value.replace(/\D/g, '')
@@ -85,28 +71,13 @@ async function restock(items) {
   )
 }
 
-/** The highest counter value already used by a stored order number. */
-async function highestOrderSequence() {
-  const [result] = await Order.aggregate([
-    {
-      $project: {
-        sequence: {
-          $convert: { input: { $substrCP: ['$number', ORDER_NUMBER_PREFIX.length, 20] }, to: 'long', onError: 0, onNull: 0 }
-        }
-      }
-    },
-    { $group: { _id: null, highest: { $max: '$sequence' } } }
-  ])
-  return Math.max(Number(result?.highest ?? 0) - ORDER_NUMBER_OFFSET, 0)
-}
-
 /**
  * Saves the order under the next number from the counter. If that number is already
  * taken (the counter was reset, or a backup was restored), the counter jumps past the
  * highest stored number and the save is tried again.
  */
 async function insertWithNumber(fields, attemptsLeft = NUMBER_ATTEMPTS) {
-  const number = `${ORDER_NUMBER_PREFIX}${ORDER_NUMBER_OFFSET + (await nextSequence('order'))}`
+  const number = formatOrderNumber(await nextSequence('order'))
   try {
     return await Order.create({ ...fields, number })
   } catch (error) {
@@ -230,7 +201,7 @@ export async function createOrder(req, res) {
       },
       ...calculateTotals(lines),
       status: 'processing',
-      statusHistory: [{ status: 'processing', at: placedAt, note: 'Order placed' }],
+      statusHistory: [{ status: 'processing', at: placedAt, note: STATUS_NOTES.processing }],
       arrivesOn: new Date(placedAt.getTime() + DELIVERY_DAYS * DAY)
     })
   } catch (error) {
@@ -289,11 +260,7 @@ export async function cancelOrder(req, res) {
   }
 
   const reason = req.body?.reason?.trim()
-  const updated = await applyStatusChange(
-    order,
-    'cancelled',
-    reason ? `Cancelled by the shopper: ${reason}` : 'Cancelled by the shopper'
-  )
+  const updated = await applyStatusChange(order, 'cancelled', shopperCancelNote(reason))
   res.json({ success: true, order: updated })
 }
 

@@ -15,9 +15,33 @@ export const DELIVERY_DAYS = 4
 // Order numbers look like SS100001: the shop prefix and a number from the order counter.
 export const ORDER_NUMBER_PREFIX = 'SS'
 export const ORDER_NUMBER_PATTERN = /^SS\d{6,12}$/i
+// The first order is SS100001, so every number has the same length on a receipt.
+const ORDER_NUMBER_OFFSET = 100000
+
+// The note each step adds to an order's history, unless the admin writes one.
+export const STATUS_NOTES = {
+  processing: 'Order placed',
+  shipped: 'Handed to the courier',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled by the store'
+}
+
+export function shopperCancelNote(reason) {
+  return reason ? `Cancelled by the shopper: ${reason}` : 'Cancelled by the shopper'
+}
+
+export function formatOrderNumber(sequence) {
+  return `${ORDER_NUMBER_PREFIX}${ORDER_NUMBER_OFFSET + sequence}`
+}
 
 function roundCurrency(value) {
   return Math.round(value * 100) / 100
+}
+
+// The same rule the storefront uses to show the struck-through price.
+export function originalPriceOf(product) {
+  const discount = product.discountPercentage || 0
+  return discount ? roundCurrency(product.price / (1 - discount / 100)) : product.price
 }
 
 /** Totals for [{ price, originalPrice, quantity }], worked out on the server only. */
@@ -109,4 +133,20 @@ const orderSchema = new mongoose.Schema(
 orderSchema.index({ createdAt: -1 })
 
 const Order = mongoose.model('Order', orderSchema)
+
+/** The highest counter value already used by a stored order number. */
+export async function highestOrderSequence() {
+  const [result] = await Order.aggregate([
+    {
+      $project: {
+        sequence: {
+          $convert: { input: { $substrCP: ['$number', ORDER_NUMBER_PREFIX.length, 20] }, to: 'long', onError: 0, onNull: 0 }
+        }
+      }
+    },
+    { $group: { _id: null, highest: { $max: '$sequence' } } }
+  ])
+  return Math.max(Number(result?.highest ?? 0) - ORDER_NUMBER_OFFSET, 0)
+}
+
 export default Order
