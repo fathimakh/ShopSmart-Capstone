@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiCornerDownLeft, FiCpu, FiX, FiZap } from 'react-icons/fi'
 import { describeEngine } from '../../utils/aiSearch'
+import { pluralize } from '../../utils/format'
 import { SEARCH_EXAMPLES } from '../../utils/assistantPrompts'
 import './AiSearchPanel.css'
 
@@ -68,7 +69,7 @@ function AiSearchPanel({ onSearch, onClear, chips, summary, source, fallbackReas
               </li>
             ))}
           </ul>
-          <p className="ai-search-count">{resultCount} matching products</p>
+          <p className="ai-search-count">{pluralize(resultCount, 'matching product')}</p>
           <button type="button" className="btn btn-ghost ai-search-clear" onClick={clear}>
             <FiX aria-hidden="true" />
             Clear

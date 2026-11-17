@@ -137,7 +137,7 @@ function Header() {
                     {count > 0 ? (
                       <span className="header-count">
                         {count}
-                        <span className="visually-hidden"> items</span>
+                        <span className="visually-hidden">{count === 1 ? ' item' : ' items'}</span>
                       </span>
                     ) : null}
                   </NavLink>

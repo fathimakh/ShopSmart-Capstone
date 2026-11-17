@@ -58,7 +58,7 @@ function BottomNav() {
                   {count > 0 ? (
                     <span className="bottom-nav-count">
                       {count > 9 ? '9+' : count}
-                      <span className="visually-hidden"> items</span>
+                      <span className="visually-hidden">{count === 1 ? ' item' : ' items'}</span>
                     </span>
                   ) : null}
                 </span>

@@ -395,7 +395,7 @@ function AdminUsers() {
             </p>
             <p>
               {target.orderCount
-                ? `Their ${pluralize(target.orderCount, 'order')} stay in the order list, without an account. `
+                ? `Their ${pluralize(target.orderCount, 'order')} ${target.orderCount === 1 ? 'stays' : 'stay'} in the order list, without an account. `
                 : ''}
               Their reviews stay in the shop. This cannot be undone.
             </p>
