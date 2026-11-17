@@ -1,6 +1,7 @@
 import Order from '../models/order.js'
 import User, { USER_ROLES } from '../models/user.js'
 import ApiError from '../utils/ApiError.js'
+import { assertNotDemoAccount } from '../utils/demoAccount.js'
 import { buildPagination, createQueryReader, escapeRegex } from '../utils/queryReader.js'
 
 async function findUserOr404(id) {
@@ -56,6 +57,10 @@ export async function updateUserRole(req, res) {
   if (user._id.equals(req.user._id) && role !== user.role) {
     throw ApiError.conflict('You cannot change your own role.', 'SELF_ROLE_CHANGE')
   }
+  if (role !== user.role) {
+    // Otherwise an admin could promote a second account and use it to demote the demo admin.
+    assertNotDemoAccount(user, 'This is a shared demo account, so its role cannot be changed.')
+  }
 
   user.role = role
   await user.save()
@@ -72,6 +77,7 @@ export async function deleteUser(req, res) {
   }
 
   const user = await findUserOr404(req.params.id)
+  assertNotDemoAccount(user, 'This is a shared demo account, so it cannot be deleted.')
   await User.deleteOne({ _id: user._id })
   res.json({ success: true, message: `Account ${user.email} deleted` })
 }

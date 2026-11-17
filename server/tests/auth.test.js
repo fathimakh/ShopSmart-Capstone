@@ -191,3 +191,24 @@ describe('POST /api/auth/logout', () => {
     assert.equal(res.body.errors[0].field, 'allDevices')
   })
 })
+
+describe('Shared demo accounts', () => {
+  it('keep their password and their other sessions', async () => {
+    // Every visitor of the live demo signs in to these with the same one-click button.
+    const { user, token } = await createUser({ email: 'Demo@ShopSmart.dev' })
+    const password = await api()
+      .patch('/api/auth/password')
+      .set(bearer(token))
+      .send({ currentPassword: DEFAULT_PASSWORD, newPassword: 'NewPassw0rd' })
+      .expect(403)
+    assert.equal(password.body.code, 'DEMO_ACCOUNT_LOCKED')
+    assert.match(password.body.message, /shared demo account/)
+
+    const everywhere = await api().post('/api/auth/logout').set(bearer(token)).send({ allDevices: true }).expect(403)
+    assert.equal(everywhere.body.code, 'DEMO_ACCOUNT_LOCKED')
+
+    await api().get('/api/auth/me').set(bearer(token)).expect(200)
+    await api().post('/api/auth/login').send({ email: user.email, password: DEFAULT_PASSWORD }).expect(200)
+    await api().post('/api/auth/logout').set(bearer(token)).send({ allDevices: false }).expect(200)
+  })
+})

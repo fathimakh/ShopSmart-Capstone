@@ -31,6 +31,8 @@ process.env.GEMINI_API_KEY = ''
 process.env.GEMINI_MODEL = 'gemini-2.5-flash'
 process.env.GEMINI_TIMEOUT_MS = '2000'
 process.env.STORE_TIMEZONE = 'UTC'
+// The shared demo accounts, whatever SEED_ADMIN_EMAIL or DEMO_ACCOUNT_EMAILS say in .env.
+process.env.DEMO_ACCOUNT_EMAILS = 'admin@shopsmart.dev,demo@shopsmart.dev'
 
 const MONGO_BASE_URI = process.env.TEST_MONGO_BASE_URI || 'mongodb://127.0.0.1:27017'
 

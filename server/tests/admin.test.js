@@ -180,6 +180,26 @@ describe('Account management', () => {
     assert.equal(kept.body.order.user, null)
   })
 
+  it('keeps the shared demo accounts from being demoted, promoted or deleted', async () => {
+    const { token: adminToken } = await createAdmin()
+    const { user: demoAdmin } = await createAdmin({ email: 'admin@shopsmart.dev' })
+    const { user: demoShopper } = await createUser({ email: 'demo@shopsmart.dev' })
+
+    const demote = await api().patch(`/api/users/${demoAdmin._id}`).set(bearer(adminToken)).send({ role: 'customer' }).expect(403)
+    assert.equal(demote.body.code, 'DEMO_ACCOUNT_LOCKED')
+    const promote = await api().patch(`/api/users/${demoShopper._id}`).set(bearer(adminToken)).send({ role: 'admin' }).expect(403)
+    assert.equal(promote.body.code, 'DEMO_ACCOUNT_LOCKED')
+    for (const account of [demoAdmin, demoShopper]) {
+      const remove = await api().delete(`/api/users/${account._id}`).set(bearer(adminToken)).expect(403)
+      assert.equal(remove.body.code, 'DEMO_ACCOUNT_LOCKED')
+    }
+
+    // Saving the role an account already has changes nothing, so it is still allowed.
+    await api().patch(`/api/users/${demoAdmin._id}`).set(bearer(adminToken)).send({ role: 'admin' }).expect(200)
+    const stored = await User.find({ _id: { $in: [demoAdmin._id, demoShopper._id] } }).sort({ email: 1 })
+    assert.deepEqual(stored.map((account) => account.role), ['admin', 'customer'])
+  })
+
   it('is only for admins', async () => {
     const { user, token } = await createUser()
     const requests = [

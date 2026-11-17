@@ -17,7 +17,17 @@ function toOriginList(value) {
     .filter(Boolean)
 }
 
+// "Admin@Shop.dev, demo@shop.dev" becomes ["admin@shop.dev", "demo@shop.dev"]
+function toEmailList(value) {
+  return String(value || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+}
+
 const nodeEnv = process.env.NODE_ENV || 'development'
+const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@shopsmart.dev'
+const seedShopperEmail = 'demo@shopsmart.dev'
 
 const env = {
   nodeEnv,
@@ -34,8 +44,13 @@ const env = {
   geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   geminiTimeoutMs: toInt(process.env.GEMINI_TIMEOUT_MS, 9000),
   storeTimezone: process.env.STORE_TIMEZONE || 'Asia/Kolkata',
-  seedAdminEmail: process.env.SEED_ADMIN_EMAIL || 'admin@shopsmart.dev',
-  seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin@1234'
+  seedAdminEmail,
+  seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin@1234',
+  seedShopperEmail,
+  // The seeded accounts behind the one-click sign in buttons are shared by every visitor,
+  // so the API refuses changes that would lock the next visitor out of them. Set
+  // DEMO_ACCOUNT_EMAILS to an empty value to treat them like any other account.
+  demoAccountEmails: toEmailList(process.env.DEMO_ACCOUNT_EMAILS ?? `${seedAdminEmail},${seedShopperEmail}`)
 }
 
 if (!env.jwtSecret) {

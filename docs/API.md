@@ -147,6 +147,7 @@ Browsers may call the API from the origins listed in `CLIENT_URL` (comma separat
 - Keys starting with `$` or containing `.` are removed from every request body before validation, so `{ "email": { "$gt": "" } }` becomes `{ "email": {} }` and fails validation. Query strings are read as plain text.
 - No card number or CVV is stored. Card orders send only the last four digits.
 - Passwords are stored as bcrypt hashes and never returned.
+- The shared demo accounts behind the one-click sign in keep their published password and their sessions: changing the password, signing out on every device, and an admin changing their role or deleting them answer `403 DEMO_ACCOUNT_LOCKED`.
 - Responses carry Helmet's security headers.
 
 ---
@@ -163,6 +164,7 @@ Browsers may call the API from the origins listed in `CLIENT_URL` (comma separat
 | 401 | `INVALID_CREDENTIALS` | Wrong email or password at sign in (the same answer for both, on purpose). |
 | 403 | `FORBIDDEN` | Signed in, but not allowed: an admin only route, someone else's review, or cancelling someone else's order. |
 | 403 | `CORS_ORIGIN_DENIED` | The browser origin is not allowed. |
+| 403 | `DEMO_ACCOUNT_LOCKED` | The change would lock other visitors out of a shared demo account: its password, signing it out on every device, or an admin changing its role or deleting it. See `DEMO_ACCOUNT_EMAILS`. |
 | 404 | `ROUTE_NOT_FOUND` | No such endpoint. |
 | 404 | `PRODUCT_NOT_FOUND` | No product with that id. |
 | 404 | `ORDER_NOT_FOUND` | No such order, or it belongs to another shopper (the two are not told apart, so order numbers cannot be probed). |
@@ -516,7 +518,7 @@ Shopper, sign in rate limit. Changes the password and signs out every other devi
 
 Store the new token straight away: the old one now answers `TOKEN_REVOKED`.
 
-Errors: `400 VALIDATION_ERROR` with `errors` `[{ "field": "currentPassword", "message": "The current password is not right" }]`, or `[{ "field": "newPassword", "message": "Choose a password you have not used here" }]` when the new password is the current one.
+Errors: `400 VALIDATION_ERROR` with `errors` `[{ "field": "currentPassword", "message": "The current password is not right" }]`, or `[{ "field": "newPassword", "message": "Choose a password you have not used here" }]` when the new password is the current one. `403 DEMO_ACCOUNT_LOCKED` for a shared demo account, whose password stays as published.
 
 #### `POST /api/auth/logout`
 
@@ -529,7 +531,7 @@ Shopper. The body is optional.
 - Without `allDevices` the answer is `{ "success": true, "message": "Signed out" }` and nothing changes on the server; the client forgets its token. A JWT stays valid until it expires, so this call is a courtesy and the client can sign out locally even if it fails.
 - With `{ "allDevices": true }` every token issued so far for the account stops working (`TOKEN_REVOKED`), including this one: `{ "success": true, "message": "Signed out on every device" }`.
 
-Errors: `400 VALIDATION_ERROR` (field `allDevices`) when it is not a boolean.
+Errors: `400 VALIDATION_ERROR` (field `allDevices`) when it is not a boolean. `403 DEMO_ACCOUNT_LOCKED` for `allDevices: true` on a shared demo account, which would sign out every other visitor using it; a normal sign out still works.
 
 ### 5.3 Products
 
@@ -1098,7 +1100,7 @@ Takes effect on the account's next request, without signing it out.
 
 **200** `{ success, user }`
 
-Errors: `409 SELF_ROLE_CHANGE` ("You cannot change your own role."), `400 VALIDATION_ERROR` (field `role`), `400 INVALID_ID` ("Invalid user id"), `404 ACCOUNT_NOT_FOUND`.
+Errors: `409 SELF_ROLE_CHANGE` ("You cannot change your own role."), `403 DEMO_ACCOUNT_LOCKED` when the account is a shared demo account and the role would change, `400 VALIDATION_ERROR` (field `role`), `400 INVALID_ID` ("Invalid user id"), `404 ACCOUNT_NOT_FOUND`.
 
 #### `DELETE /api/users/:id`
 
@@ -1106,7 +1108,7 @@ Deletes the account. Its sessions stop working (`401 USER_NOT_FOUND`). Its order
 
 **200** `{ "success": true, "message": "Account meera@example.com deleted" }`
 
-Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `400 INVALID_ID`, `404 ACCOUNT_NOT_FOUND`.
+Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `403 DEMO_ACCOUNT_LOCKED` for a shared demo account, `400 INVALID_ID`, `404 ACCOUNT_NOT_FOUND`.
 
 ---
 
@@ -1153,5 +1155,6 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `GEMINI_TIMEOUT_MS` | `9000` | How long to wait for Gemini before `504 AI_TIMEOUT`. |
 | `STORE_TIMEZONE` | `Asia/Kolkata` | IANA time zone for the dashboard's daily sales. The server will not start with an unknown zone. |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | `admin@shopsmart.dev`, `Admin@1234` | The admin account `npm run seed` creates. |
+| `DEMO_ACCOUNT_EMAILS` | `SEED_ADMIN_EMAIL` and `demo@shopsmart.dev` | Shared demo accounts, comma separated. Their password cannot be changed, they cannot be signed out on every device, and admins cannot change their role or delete them (`403 DEMO_ACCOUNT_LOCKED`). Set it to an empty value to treat them like any other account. |
 
 The tests (`npm test`) need a MongoDB at `mongodb://127.0.0.1:27017`. For one elsewhere, set `TEST_MONGO_BASE_URI` (for example `mongodb://127.0.0.1:27036`) in the shell or in `.env`. It is never taken from `MONGO_URI`, so the tests cannot drop databases on a real cluster. Each test file creates and drops its own `shopsmart_test_<name>` database and stubs Gemini, so the tests never touch the development database or call the real API.

@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs'
 import User from '../models/user.js'
 import ApiError from '../utils/ApiError.js'
+import { assertNotDemoAccount } from '../utils/demoAccount.js'
 import generateToken from '../utils/generateToken.js'
 
 // Checked against when the email is unknown, so a failed sign in takes the same time
@@ -66,6 +67,10 @@ export async function updateMe(req, res) {
  */
 export async function changePassword(req, res) {
   const { currentPassword, newPassword } = req.body
+  assertNotDemoAccount(
+    req.user,
+    'This is a shared demo account, so its password cannot be changed. Create your own account to try this.'
+  )
   const user = await User.findById(req.user._id).select('+password +tokenVersion')
 
   if (!(await user.comparePassword(currentPassword))) {
@@ -89,6 +94,10 @@ export async function changePassword(req, res) {
  */
 export async function logout(req, res) {
   if (req.body?.allDevices === true) {
+    assertNotDemoAccount(
+      req.user,
+      'This is a shared demo account, so it cannot be signed out on every device. Create your own account to try this.'
+    )
     await User.updateOne({ _id: req.user._id }, { $inc: { tokenVersion: 1 } })
     res.json({ success: true, message: 'Signed out on every device' })
     return

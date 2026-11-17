@@ -18,7 +18,7 @@ const fresh = process.argv.includes('--fresh')
 
 export const demoAccounts = [
   { name: 'ShopSmart Admin', email: env.seedAdminEmail, password: env.seedAdminPassword, role: 'admin' },
-  { name: 'Demo Shopper', email: 'demo@shopsmart.dev', password: 'Demo@1234', role: 'customer' }
+  { name: 'Demo Shopper', email: env.seedShopperEmail, password: 'Demo@1234', role: 'customer' }
 ]
 
 function toProduct(entry, now) {
