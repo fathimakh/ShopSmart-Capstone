@@ -1141,7 +1141,7 @@ Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `403 DEMO_ACC
 
 ## 7. Server configuration
 
-Set in `server/.env` locally (copy `server/.env.example`) or in the host's environment. Values set by the host win over the file.
+Set in `server/.env` locally (copy `server/.env.example`) or in the host's environment; [`render.yaml`](../render.yaml) sets them for the Render deploy. Values set by the host win over the file.
 
 | Variable | Default | Meaning |
 |---|---|---|
