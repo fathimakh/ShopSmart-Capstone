@@ -22,7 +22,8 @@ export const authLimiter = createLimiter(
   'Too many sign in attempts. Please wait 15 minutes and try again.'
 )
 
-// Every AI request costs a Gemini call, so one visitor cannot use up the daily quota.
+// Every AI request costs a Gemini call (two when a busy model is retried), so one visitor
+// cannot use up the daily quota.
 export const aiLimiter = createLimiter(
   env.aiRateLimitMax,
   'The assistant is taking a short break. Please try again in a few minutes.'

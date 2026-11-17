@@ -2,8 +2,9 @@ import { api } from './http'
 
 // The AI endpoints (docs/API.md, AI assistant). The Gemini key lives only on the server.
 
-// Gemini gets 9 seconds on the server; this leaves room for the trip there and back.
-const SEARCH_TIMEOUT = 15000
+// The server gives Gemini 20 seconds (GEMINI_TIMEOUT_MS), retry included; this waits a
+// little longer so the server's own 503 or 504 answer arrives instead of a client timeout.
+export const AI_TIMEOUT = 25000
 // How long a "Gemini is (not) set up" answer is trusted before asking again, so a key
 // added on the server is picked up without a reload.
 const STATUS_TTL = 5 * 60 * 1000
@@ -37,6 +38,6 @@ export function resetAiStatus() {
 
 /** Asks Gemini, through the server, to read a shopper's message. Resolves with `result`. */
 export async function searchWithAi(body, { signal } = {}) {
-  const data = await api.post('/ai/search', body, { signal, auth: false, timeout: SEARCH_TIMEOUT })
+  const data = await api.post('/ai/search', body, { signal, auth: false, timeout: AI_TIMEOUT })
   return data.result
 }

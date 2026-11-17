@@ -59,7 +59,7 @@ const env = {
   aiSummaryDailyMax: toInt(process.env.AI_SUMMARY_DAILY_MAX, 100),
   geminiApiKey: (process.env.GEMINI_API_KEY || '').trim(),
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
-  geminiTimeoutMs: toInt(process.env.GEMINI_TIMEOUT_MS, 9000),
+  geminiTimeoutMs: toInt(process.env.GEMINI_TIMEOUT_MS, 20000),
   storeTimezone: process.env.STORE_TIMEZONE || 'Asia/Kolkata',
   seedAdminEmail,
   seedAdminPassword: process.env.SEED_ADMIN_PASSWORD || 'Admin@1234',

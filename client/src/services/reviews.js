@@ -1,4 +1,5 @@
 import { api } from './http'
+import { AI_TIMEOUT } from './ai'
 
 // The reviews API (docs/API.md, Reviews). Reading is open to everyone; a signed in
 // shopper's token is sent when there is one, so the answer includes their own review.
@@ -29,6 +30,7 @@ export async function deleteReview(productId, reviewId) {
 
 /** The AI summary of the reviews, or null when the product has none to summarise. */
 export async function fetchReviewSummary(productId, { signal } = {}) {
-  const data = await api.get(`/products/${encodeURIComponent(productId)}/review-summary`, { signal })
+  // A summary that is not cached yet is written by Gemini, so it gets the AI time limit.
+  const data = await api.get(`/products/${encodeURIComponent(productId)}/review-summary`, { signal, timeout: AI_TIMEOUT })
   return data.summary || null
 }

@@ -50,7 +50,7 @@ behind it in `server/`:
 | Price history | Rebuilt in the browser from the discount | Twelve weekly prices stored per product by the seed, a new point on every admin price change, and the forecast worked out on the server |
 | Gemini | Called from the browser, key visible in the bundle | Called only by the server (`server/services/gemini.js`). The key never reaches the browser. AI review summaries are new |
 | Admin | None | `/admin`: dashboard, products, orders and accounts, behind the admin role in the API and in the UI |
-| Tests | None | 150 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
+| Tests | None | 156 API tests (`node:test` + supertest) and 244 client tests (Vitest + Testing Library) |
 | Hosting | Netlify static site | Render web service for the API, Render static site for the client, MongoDB Atlas, all described in [`render.yaml`](render.yaml) |
 
 ## What it does
@@ -96,7 +96,11 @@ as "gift for my wife who loves perfume, up to 150" and turn it into the shop's f
    [structured output](https://ai.google.dev/gemini-api/docs/structured-output): the reply
    must be JSON that follows a response schema, and the category and brand fields are enums
    of those lists. Thinking is set to its `minimal` level, close to off, to keep the reply
-   quick, and the server waits at most 9 seconds (`GEMINI_TIMEOUT_MS`). No temperature is
+   quick, and the server waits at most 20 seconds (`GEMINI_TIMEOUT_MS`). An answer usually
+   takes 6 to 8 seconds; when Gemini says it is busy (`503`, which it often does for a
+   moment) or the connection drops, the server tries once more within the same 20 seconds,
+   as long as at least 40% of that time is left.
+   No temperature is
    sent, because the 3.5 and later models ignore it. A 2.x model set in `GEMINI_MODEL` gets
    a temperature of 0.1, and a 2.5 Flash model has thinking turned off.
 4. A schema guides the model but does not bind it, so `toSearchResult` checks the reply field
@@ -123,7 +127,7 @@ pros and four cons. The reply has its own response schema and is checked by `toR
 (verdict at most 400 characters, each point at most 120). The summary is cached on the
 product with a SHA-256 fingerprint of all its reviews (each review's id and last change), so
 Gemini is asked again only after a review is added, edited or deleted. Requests for the same
-product that arrive while a summary is being written share that one call. Without a key the
+product that arrive while a summary is being written share that one summary. Without a key the
 client does not ask at all: the product page shows a quiet line saying the summary is not
 available, and the reviews are unaffected.
 
@@ -139,7 +143,7 @@ available, and the reviews are unaffected.
 |---|---|---|---|
 | AI searches per IP address per 15 minutes | `AI_RATE_LIMIT_MAX` | 60 | 60 |
 | New review summaries per IP address per 15 minutes (counted apart from search; cached summaries do not count) | `AI_RATE_LIMIT_MAX` | 60 | 60 |
-| Review summary requests sent to Gemini per day for the whole server, from midnight UTC (failed requests count; cached summaries do not) | `AI_SUMMARY_DAILY_MAX` | 100 | 50 |
+| New review summaries per day for the whole server, from midnight UTC (failed ones count; cached summaries do not; a summary retried after a busy answer counts once) | `AI_SUMMARY_DAILY_MAX` | 100 | 50 |
 
 The daily cap keeps product browsing, or a script walking every product page, from using up
 the key's daily quota that AI search also needs.
@@ -344,10 +348,10 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 | `CLIENT_URL` | Local: `http://localhost:3000`<br>Render: asked for at creation | Allowed browser origins, comma separated. In production it is required and each entry must be a bare origin such as `https://shopsmart-capstone-web.onrender.com` (scheme and host only, no path, lower case; a trailing slash is removed). In development any localhost port is allowed too |
 | `AUTH_RATE_LIMIT_MAX` | Local: `50`<br>Render: `100` | Sign in, sign up and password change attempts per IP address per 15 minutes (one shared budget) |
 | `AI_RATE_LIMIT_MAX` | Local: `60`<br>Render: `60` | AI searches, and separately new review summaries, per IP address per 15 minutes |
-| `AI_SUMMARY_DAILY_MAX` | Local: `100`<br>Render: `50` | Review summary requests to Gemini per day for the whole server (failed requests count) |
+| `AI_SUMMARY_DAILY_MAX` | Local: `100`<br>Render: `50` | New review summaries per day for the whole server (failed ones count; one summary can make two Gemini calls when the first answer is busy) |
 | `GEMINI_API_KEY` | Local: empty<br>Render: asked for at creation, may stay empty | Google Gemini key. Without it `POST /api/ai/search` and new review summaries answer `503 AI_UNAVAILABLE`, and `GET /api/ai/status` says `enabled: false` |
 | `GEMINI_MODEL` | Local: `gemini-3.5-flash-lite`<br>Render: `gemini-3.5-flash-lite` | Gemini model. `gemini-2.5-flash`, the earlier choice, only serves accounts that used it before and shuts down on 1 December 2026 |
-| `GEMINI_TIMEOUT_MS` | Local: `9000`<br>Render: `9000` | How long to wait for Gemini before `504 AI_TIMEOUT` |
+| `GEMINI_TIMEOUT_MS` | Local: `20000`<br>Render: `20000` | How long to wait for Gemini, one retry included, before `504 AI_TIMEOUT`. The client waits 25 seconds for AI answers (`AI_TIMEOUT` in `client/src/services/ai.js`), so raising this above about 20 seconds needs that raised too |
 | `STORE_TIMEZONE` | Local: `Asia/Kolkata`<br>Render: `Asia/Kolkata` | Time zone of the dashboard's daily sales |
 | `DEMO_ACCOUNT_EMAILS` | Local: not set, which means the seeded admin and `demo@shopsmart.dev`<br>Render: the same two, listed | Shared demo accounts the API locks against password change, sign out everywhere, role change and deletion. An empty value turns the lock off |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Local: `admin@shopsmart.dev`, `Admin@1234`<br>Render: not set, as the seed runs from a local machine | The admin account `npm run seed` creates. Keep these values: the sign-in page's Store Admin button uses them |
@@ -364,7 +368,7 @@ the value [`render.yaml`](render.yaml) gives the hosted services. Full details:
 
 | Check | Command | Result |
 |---|---|---|
-| API tests (`node:test` + supertest against a real MongoDB, Gemini stubbed) | `cd server && npm test` | **150 / 150 passing** in 12 files |
+| API tests (`node:test` + supertest against a real MongoDB, Gemini stubbed) | `cd server && npm test` | **156 / 156 passing** in 12 files |
 | Client tests (Vitest + Testing Library in jsdom) | `cd client && npm test` | **244 / 244 passing** in 48 files |
 | Client production build | `cd client && npm run build` | builds without warnings |
 | Browser run with Playwright (the screenshots below) | scripts kept outside the repository | no console errors or warnings, no failed API requests |
@@ -559,7 +563,7 @@ Render setup has been checked.
 | Backend with Node.js, Express and MongoDB | `server/app.js`, `server/routes/`, `server/controllers/`, Mongoose models in `server/models/` |
 | Authentication | JWT (`server/utils/generateToken.js`, `server/middleware/auth.js`), bcrypt (`server/models/user.js`), sign in and sign up pages, `client/src/context/AuthContext.jsx` |
 | Authorisation and business logic | Admin role (`authorize('admin')`, `ProtectedRoute`), checkout pricing and stock reservation (`createOrder` in `server/controllers/orderController.js`), status steps, one review per product with verified purchases and a blended rating, the demo account lock |
-| Backend CRUD, tested | Products, orders, reviews, saved lists and accounts; 150 API tests in `server/tests/` |
+| Backend CRUD, tested | Products, orders, reviews, saved lists and accounts; 156 API tests in `server/tests/` |
 | Frontend consumes the API | `client/src/services/http.js`, used by the service files (catalogue, price history, orders, reviews, AI, admin) and by the auth and shop contexts (session, saved lists) |
 | At least one AI tool, matched to the domain | Google Gemini API: natural language product search and review summaries (`server/services/`). Also TF-IDF recommendations and a regression price forecast |
 | A working, visible AI feature | Assistant page, AI search box, review summary panel, "Recommended for you" (appears after viewing a product), "Similar products", price outlook. Gemini needs `GEMINI_API_KEY` on the server; without it the on-device parser answers, so the search always responds |

@@ -71,10 +71,11 @@ services:
       - key: GEMINI_MODEL
         value: gemini-3.5-flash-lite
       - key: GEMINI_TIMEOUT_MS
-        value: "9000"
-      # Review summary requests sent to Gemini a day for the whole server (failed ones
-      # count, cached summaries do not). AI search shares the key's daily request quota
-      # (shown in Google AI Studio), so keep this well under it.
+        value: "20000"
+      # New review summaries a day for the whole server (failed ones count, cached
+      # summaries do not; one can make two Gemini calls when a busy model is retried). AI
+      # search shares the key's daily request quota (shown in Google AI Studio), so keep
+      # this well under it.
       - key: AI_SUMMARY_DAILY_MAX
         value: "50"
       - key: STORE_TIMEZONE

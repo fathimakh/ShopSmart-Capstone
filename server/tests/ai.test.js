@@ -167,10 +167,60 @@ describe('POST /api/ai/search', () => {
     }
   })
 
-  it('answers 503 AI_UNAVAILABLE when Gemini is over its quota', async (t) => {
-    stubGemini(t, () => new Response('{}', { status: 429 }))
+  it('answers 503 AI_UNAVAILABLE when Gemini is over its quota, without retrying', async (t) => {
+    const fetchMock = stubGemini(t, () => new Response('{}', { status: 429 }))
     const res = await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(503)
     assert.equal(res.body.code, 'AI_UNAVAILABLE')
+    assert.equal(fetchMock.mock.callCount(), 1)
+  })
+
+  it('retries once when Gemini is busy, and answers when the retry works', async (t) => {
+    let calls = 0
+    const fetchMock = stubGemini(t, () => (++calls === 1 ? new Response('{}', { status: 503 }) : geminiReply(searchAnswer())))
+    const res = await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(200)
+    assert.deepEqual(res.body.result.categories, ['smartphones'])
+    assert.equal(fetchMock.mock.callCount(), 2)
+  })
+
+  it('retries once after a dropped connection', async (t) => {
+    let calls = 0
+    const fetchMock = stubGemini(t, () => {
+      if (++calls === 1) throw new TypeError('fetch failed')
+      return geminiReply(searchAnswer())
+    })
+    await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(200)
+    assert.equal(fetchMock.mock.callCount(), 2)
+  })
+
+  it('answers 503 AI_UNAVAILABLE when Gemini is still busy after the retry', async (t) => {
+    const fetchMock = stubGemini(t, () => new Response('{}', { status: 503 }))
+    const res = await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(503)
+    assert.equal(res.body.code, 'AI_UNAVAILABLE')
+    assert.equal(fetchMock.mock.callCount(), 2)
+  })
+
+  it('skips the retry when too little of the time limit is left', async (t) => {
+    const fetchMock = stubGemini(t, async () => {
+      // The first try uses up more than 60% of the 2 s limit.
+      await new Promise((resolve) => setTimeout(resolve, 1300))
+      return new Response('{}', { status: 503 })
+    })
+    const res = await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(503)
+    assert.equal(res.body.code, 'AI_UNAVAILABLE')
+    assert.equal(fetchMock.mock.callCount(), 1)
+  })
+
+  it('never retries a reply that arrived but is not JSON', async (t) => {
+    const fetchMock = stubGemini(t, () => new Response('<html>not json</html>', { status: 200 }))
+    const res = await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(502)
+    assert.equal(res.body.code, 'AI_FAILED')
+    assert.equal(fetchMock.mock.callCount(), 1)
+  })
+
+  it('never retries an answer Gemini rejected outright', async (t) => {
+    const fetchMock = stubGemini(t, () => new Response('{"error":{"message":"API key not valid"}}', { status: 400 }))
+    await api().post('/api/ai/search').send({ query: 'running shoes' }).expect(502)
+    assert.equal(fetchMock.mock.callCount(), 1)
   })
 
   it('answers 504 AI_TIMEOUT when Gemini is too slow', async (t) => {

@@ -6,9 +6,11 @@
  * check that JSON field by field, because a schema guides the model but does not bind it.
  *
  * Failures are turned into the API's own errors:
- *   503 AI_UNAVAILABLE  no key is configured, or Gemini is over its quota
- *   504 AI_TIMEOUT      no answer within GEMINI_TIMEOUT_MS
- *   502 AI_FAILED       Gemini answered with an error or with something unusable
+ *   503 AI_UNAVAILABLE  no key is configured, Gemini is over its quota, or it was busy (after
+ *                       one retry, when enough time was left for one)
+ *   504 AI_TIMEOUT      no answer within GEMINI_TIMEOUT_MS (shared by both tries)
+ *   502 AI_FAILED       Gemini answered with an error or with something unusable, or it could
+ *                       not be reached
  */
 import env from '../config/env.js'
 import ApiError from '../utils/ApiError.js'
@@ -53,36 +55,70 @@ function generationConfig(schema, temperature, maxOutputTokens) {
   return config
 }
 
+function busy() {
+  return ApiError.unavailable('The assistant is busy right now. Please try again in a minute.', 'AI_UNAVAILABLE')
+}
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// Gemini often answers 503 "high demand" for a moment and then works again, so a busy model
+// or a dropped connection gets one more try. A 429 means the key's quota is used up, which a
+// retry cannot fix. Both tries share GEMINI_TIMEOUT_MS, and the second one only starts while
+// at least 40% of that time is left, because an answer usually takes 6 to 8 seconds.
+const MAX_ATTEMPTS = 2
+
 async function callGemini(body) {
   const controller = new AbortController()
+  const deadline = Date.now() + env.geminiTimeoutMs
   const timer = setTimeout(() => controller.abort(), env.geminiTimeoutMs)
+  let problem
 
   try {
-    const response = await fetch(`${API_ROOT}/${env.geminiModel}:generateContent`, {
-      method: 'POST',
-      // Sent as a header rather than in the URL, so the key never shows up in a log line.
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.geminiApiKey },
-      body: JSON.stringify(body),
-      signal: controller.signal
-    })
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        const response = await fetch(`${API_ROOT}/${env.geminiModel}:generateContent`, {
+          method: 'POST',
+          // Sent as a header rather than in the URL, so the key never shows up in a log line.
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.geminiApiKey },
+          body: JSON.stringify(body),
+          signal: controller.signal
+        })
 
-    if (response.status === 429 || response.status === 503) {
-      logProblem(`busy, status ${response.status}`)
-      throw ApiError.unavailable('The assistant is busy right now. Please try again in a minute.', 'AI_UNAVAILABLE')
+        if (response.status === 429) {
+          logProblem('over quota, status 429')
+          throw busy()
+        }
+        if (response.status === 503) {
+          logProblem(`busy, status 503 (try ${attempt} of ${MAX_ATTEMPTS})`)
+          problem = busy()
+        } else if (!response.ok) {
+          const detail = await response.text().catch(() => '')
+          logProblem(`request failed with status ${response.status}: ${detail.slice(0, 300)}`)
+          throw aiFailed('The assistant could not answer that. Please try again.')
+        } else {
+          // Gemini has answered (and billed the call), so a reply that is not JSON is a bad
+          // answer, not a reason to ask again.
+          try {
+            return await response.json()
+          } catch (error) {
+            if (controller.signal.aborted) throw error
+            logProblem('the reply was not JSON')
+            throw aiFailed()
+          }
+        }
+      } catch (error) {
+        if (error instanceof ApiError) throw error
+        if (controller.signal.aborted) {
+          throw new ApiError(504, 'The assistant took too long to answer. Please try again.', { code: 'AI_TIMEOUT' })
+        }
+        logProblem(`request failed: ${error.message} (try ${attempt} of ${MAX_ATTEMPTS})`)
+        problem = aiFailed('We could not reach the assistant. Please try again.')
+      }
+
+      if (attempt === MAX_ATTEMPTS || deadline - Date.now() < env.geminiTimeoutMs * 0.4) break
+      await sleep(Math.min(800, env.geminiTimeoutMs / 20))
     }
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '')
-      logProblem(`request failed with status ${response.status}: ${detail.slice(0, 300)}`)
-      throw aiFailed('The assistant could not answer that. Please try again.')
-    }
-    return await response.json()
-  } catch (error) {
-    if (error instanceof ApiError) throw error
-    if (controller.signal.aborted) {
-      throw new ApiError(504, 'The assistant took too long to answer. Please try again.', { code: 'AI_TIMEOUT' })
-    }
-    logProblem(`request failed: ${error.message}`)
-    throw aiFailed('We could not reach the assistant. Please try again.')
+    throw problem
   } finally {
     clearTimeout(timer)
   }

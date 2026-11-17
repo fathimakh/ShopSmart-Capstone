@@ -138,7 +138,7 @@ Counted per IP address over 15 minutes. Going over answers `429 RATE_LIMITED`.
 | AI search | `POST /api/ai/search` | 60 (`AI_RATE_LIMIT_MAX`) |
 | Review summaries | `GET /api/products/:id/review-summary`, only when a new summary has to be written (cached summaries do not count). Counted apart from AI search, so browsing products never uses up the search allowance. | 60 (`AI_RATE_LIMIT_MAX`) |
 
-New review summaries also have a budget for the whole server, `AI_SUMMARY_DAILY_MAX` (100) requests to Gemini a day counted from midnight UTC, so that browsing, or a script walking every product, cannot use up the Gemini quota AI search needs. A request that fails (timeout, Gemini busy, unusable answer) still counts. Once the budget is spent, new summaries answer `503 AI_UNAVAILABLE` until the next day; cached ones are still served.
+New review summaries also have a budget for the whole server, `AI_SUMMARY_DAILY_MAX` (100) summaries a day counted from midnight UTC, so that browsing, or a script walking every product, cannot use up the Gemini quota AI search needs. A summary that fails (timeout, Gemini busy, unusable answer) still counts. The budget counts summaries, not Gemini calls: a summary retried after a busy answer (see below) counts once but makes two calls. Once the budget is spent, new summaries answer `503 AI_UNAVAILABLE` until the next day; cached ones are still served.
 
 ### CORS
 
@@ -184,9 +184,9 @@ Browsers may call the API from the origins listed in `CLIENT_URL` (comma separat
 | 413 | `PAYLOAD_TOO_LARGE` | The body is over 1 MB. |
 | 429 | `RATE_LIMITED` | Too many requests. See [Rate limits](#rate-limits). |
 | 500 | `SERVER_ERROR` | An unexpected fault. The message is generic. |
-| 502 | `AI_FAILED` | Gemini answered with an error or with something unusable. |
-| 503 | `AI_UNAVAILABLE` | No Gemini key is configured on the server, Gemini is over its quota, or (review summaries only) today's `AI_SUMMARY_DAILY_MAX` is spent. |
-| 504 | `AI_TIMEOUT` | Gemini did not answer within `GEMINI_TIMEOUT_MS` (9 seconds by default). |
+| 502 | `AI_FAILED` | Gemini answered with an error or with something unusable, or could not be reached (a dropped connection, after one retry when time allowed). |
+| 503 | `AI_UNAVAILABLE` | No Gemini key is configured on the server, Gemini is over its quota (`429`, not retried), Gemini was busy (`503`; retried once when at least 40% of `GEMINI_TIMEOUT_MS` was left), or (review summaries only) today's `AI_SUMMARY_DAILY_MAX` is spent. |
+| 504 | `AI_TIMEOUT` | Gemini did not answer within `GEMINI_TIMEOUT_MS` (20 seconds by default, shared by the first try and the retry). |
 
 ---
 
@@ -752,7 +752,7 @@ Errors: `400 INVALID_ID` ("Invalid product id" or "Invalid review id"), `403 FOR
 
 #### `GET /api/products/:id/review-summary`
 
-Public. Gemini reads the product's newest reviews (up to 50) and writes a short verdict with pros and cons. The summary is cached on the product with a fingerprint of its reviews, so it is written once and served from the cache until a review is added, edited or deleted. Cached answers do not count against the rate limit and are served even when no Gemini key is configured. Requests that arrive while the same summary is being written wait for it and get the same answer, so Gemini is asked once.
+Public. Gemini reads the product's newest reviews (up to 50) and writes a short verdict with pros and cons. The summary is cached on the product with a fingerprint of its reviews, so it is written once and served from the cache until a review is added, edited or deleted. Cached answers do not count against the rate limit and are served even when no Gemini key is configured. Requests that arrive while the same summary is being written wait for it and get the same answer, so only one summary is written (one Gemini call, or two if a busy model is retried).
 
 **200**, with a summary:
 
@@ -1135,7 +1135,7 @@ Errors: `409 SELF_DELETE` ("You cannot delete your own account."), `403 DEMO_ACC
 
 **Price chart.** Use `points` (with dates) for the chart and `prediction` for the verdict. When `prediction.hasEnoughData` is `false`, show a short "not enough price history yet" note instead of a chart.
 
-**Free-tier hosting.** A sleeping server can take up to a minute to answer the first request. The ShopSmart client gives the requests a visit starts with (the catalogue, `GET /api/auth/me`, sign in and sign up) up to 60 seconds, shows a "waking up the server" notice once the catalogue takes more than 5 seconds, and retries a failed session check when the browser comes back online. Other requests give up after 20 seconds.
+**Free-tier hosting.** A sleeping server can take up to a minute to answer the first request. The ShopSmart client gives the requests a visit starts with (the catalogue, `GET /api/auth/me`, sign in and sign up) up to 60 seconds, shows a "waking up the server" notice once the catalogue takes more than 5 seconds, and retries a failed session check when the browser comes back online. AI search and new review summaries give up after 25 seconds, a little longer than the server's own 20-second Gemini limit, so the server's `503` or `504` arrives first. Other requests give up after 20 seconds.
 
 ---
 
@@ -1153,10 +1153,10 @@ Set in `server/.env` locally (copy `server/.env.example`) or in the host's envir
 | `CLIENT_URL` | `http://localhost:3000` | Allowed browser origins, comma separated. Required in production, where each one must be a bare origin such as `https://shopsmart.onrender.com` (no path, lower case), or the server will not start. |
 | `AUTH_RATE_LIMIT_MAX` | `50` | Sign in, sign up and password change attempts per IP address per 15 minutes (one shared budget). |
 | `AI_RATE_LIMIT_MAX` | `60` | AI searches per IP per 15 minutes, and separately new review summaries per IP per 15 minutes. |
-| `AI_SUMMARY_DAILY_MAX` | `100` | Review summary requests the whole server may send Gemini each day (from midnight UTC). Failed requests count; cached summaries do not. Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
+| `AI_SUMMARY_DAILY_MAX` | `100` | New review summaries the whole server may ask Gemini for each day (from midnight UTC). Failed ones count; cached summaries do not. A summary retried after a busy answer counts once but makes two Gemini calls. Keep it well under the key's daily request quota, which AI search shares. `0` turns new summaries off; cached ones are still served. |
 | `GEMINI_API_KEY` | empty | Google Gemini key. Without it `POST /api/ai/search` and new review summaries answer `503 AI_UNAVAILABLE`, and `GET /api/ai/status` says `enabled: false`. Cached summaries are still served. |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Gemini model name. The server asks `gemini-3.5-flash-lite` and `gemini-3.6-flash` for minimal thinking and the 2.5 Flash models for none, and sends a temperature only to 2.x models. |
-| `GEMINI_TIMEOUT_MS` | `9000` | How long to wait for Gemini before `504 AI_TIMEOUT`. |
+| `GEMINI_TIMEOUT_MS` | `20000` | How long to wait for Gemini before `504 AI_TIMEOUT`. A busy answer (`503`) or a dropped connection gets one retry within this time, if at least 40% of it is left; a `429` (quota used up) is not retried. The client waits 25 seconds for AI answers, so a value above about 20 seconds also needs `AI_TIMEOUT` in `client/src/services/ai.js` raised. |
 | `STORE_TIMEZONE` | `Asia/Kolkata` | IANA time zone for the dashboard's daily sales. The server will not start with an unknown zone. |
 | `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | `admin@shopsmart.dev`, `Admin@1234` | The admin account `npm run seed` creates. |
 | `DEMO_ACCOUNT_EMAILS` | `SEED_ADMIN_EMAIL` and `demo@shopsmart.dev` | Shared demo accounts, comma separated. Their password cannot be changed, they cannot be signed out on every device, and admins cannot change their role or delete them (`403 DEMO_ACCOUNT_LOCKED`). Set it to an empty value to treat them like any other account. |

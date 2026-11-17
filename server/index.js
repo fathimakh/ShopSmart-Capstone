@@ -30,8 +30,11 @@ async function start() {
 
   function shutdown(signal) {
     console.log(`${signal} received, closing the server and the database connection`)
-    // Give open requests ten seconds to finish before forcing the exit.
-    setTimeout(() => process.exit(1), 10000).unref()
+    // Give open requests time to finish before forcing the exit: at least ten seconds, and
+    // long enough for an AI request (GEMINI_TIMEOUT_MS plus its database work), but under the
+    // 30 seconds a host such as Render waits before it kills the process anyway.
+    const grace = Math.min(28000, Math.max(10000, env.geminiTimeoutMs + 5000))
+    setTimeout(() => process.exit(1), grace).unref()
     server.close(async () => {
       await disconnectDB()
       process.exit(0)
