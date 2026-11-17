@@ -57,6 +57,9 @@ function Login() {
 
   const handleSubmit = (event) => {
     event.preventDefault()
+    // The buttons stay focusable while a sign in is on its way (aria-disabled), so a
+    // refused attempt leaves focus where it was; a second press is ignored here.
+    if (submitting) return
     const clientErrors = validateLogin(values)
     setErrors(clientErrors)
     if (Object.keys(clientErrors).length) {
@@ -67,6 +70,7 @@ function Login() {
   }
 
   const signInWithDemo = (account) => {
+    if (submitting) return
     setValues({ email: account.email, password: account.password })
     setErrors({})
     signIn(account, account.email)
@@ -134,7 +138,7 @@ function Login() {
           </p>
         ) : null}
 
-        <button type="submit" className="btn btn-primary btn-block" disabled={Boolean(submitting)}>
+        <button type="submit" className="btn btn-primary btn-block" aria-disabled={Boolean(submitting)}>
           <FiLogIn aria-hidden="true" />
           {submitting === 'form' ? 'Signing in' : 'Sign in'}
         </button>
@@ -150,7 +154,7 @@ function Login() {
               type="button"
               className="btn btn-outline"
               onClick={() => signInWithDemo(account)}
-              disabled={Boolean(submitting)}
+              aria-disabled={Boolean(submitting)}
             >
               {submitting === account.email ? (
                 'Signing in'

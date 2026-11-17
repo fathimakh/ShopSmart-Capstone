@@ -190,7 +190,9 @@ describe('Checkout', () => {
     expect(screen.getByRole('button', { name: /^Place order/ })).toBeDisabled()
 
     fireEvent.click(within(line).getByRole('button', { name: 'Change to 1 for Product 1' }))
-    expect(await screen.findByText(/Your cart now fits the stock/)).toBeInTheDocument()
+    const fixed = await screen.findByText(/Your cart now fits the stock/)
+    // The pressed button is gone, so focus lands on the note rather than the page.
+    await waitFor(() => expect(fixed).toHaveFocus())
 
     const retry = screen.getByRole('button', { name: /^Place order/ })
     expect(retry).toBeEnabled()

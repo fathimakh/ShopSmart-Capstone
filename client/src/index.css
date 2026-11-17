@@ -187,6 +187,13 @@ button {
   cursor: not-allowed;
 }
 
+/* A button that is busy or not ready yet keeps keyboard focus, so it is marked with
+   aria-disabled (its handler ignores presses) instead of disabled, which drops focus. */
+.btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .btn-primary {
   background-color: var(--color-primary);
   color: #fff;

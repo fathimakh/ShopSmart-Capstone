@@ -52,8 +52,11 @@ function Assistant() {
     questions?.[questions.length - 1]?.scrollIntoView({ block: 'start' })
   }, [messages])
 
+  // Send stays focusable while it cannot be used (aria-disabled), so focus is not lost
+  // when the message box empties after sending; an early press is ignored here.
   const send = (event) => {
     event.preventDefault()
+    if (!value.trim() || isThinking) return
     ask(value)
     setValue('')
   }
@@ -227,7 +230,7 @@ function Assistant() {
           onChange={(event) => setValue(event.target.value)}
           disabled={status === 'loading'}
         />
-        <button type="submit" className="btn btn-primary" disabled={!value.trim() || isThinking}>
+        <button type="submit" className="btn btn-primary" aria-disabled={!value.trim() || isThinking}>
           <FiSend aria-hidden="true" />
           {isThinking ? 'Thinking' : 'Send'}
         </button>

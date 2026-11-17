@@ -72,8 +72,11 @@ function Account() {
     setPasswords((current) => ({ ...current, [field]: event.target.value }))
   }
 
+  // The buttons below stay focusable while their request is on its way (aria-disabled),
+  // so focus stays where the shopper left it; a second press is ignored here.
   const saveProfile = async (event) => {
     event.preventDefault()
+    if (profileStatus.state === 'saving') return
     const clientErrors = validateProfile(profile)
     setProfileErrors(clientErrors)
     if (Object.keys(clientErrors).length) {
@@ -107,6 +110,7 @@ function Account() {
 
   const savePassword = async (event) => {
     event.preventDefault()
+    if (passwordStatus.state === 'saving') return
     const clientErrors = validatePasswordChange(passwords)
     setPasswordErrors(clientErrors)
     if (Object.keys(clientErrors).length) {
@@ -138,6 +142,7 @@ function Account() {
   }
 
   const signOut = async (allDevices) => {
+    if (signingOut) return
     setSigningOut(allDevices ? 'all' : 'this')
     setSignOutError('')
     try {
@@ -273,7 +278,7 @@ function Account() {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={profileStatus.state === 'saving'}
+                aria-disabled={profileStatus.state === 'saving'}
               >
                 {profileStatus.state === 'saving' ? 'Saving' : 'Save changes'}
               </button>
@@ -327,7 +332,7 @@ function Account() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={passwordStatus.state === 'saving'}
+                  aria-disabled={passwordStatus.state === 'saving'}
                 >
                   {passwordStatus.state === 'saving' ? 'Changing password' : 'Change password'}
                 </button>
@@ -352,7 +357,7 @@ function Account() {
                 type="button"
                 className="btn btn-outline"
                 onClick={() => signOut(false)}
-                disabled={Boolean(signingOut)}
+                aria-disabled={Boolean(signingOut)}
               >
                 {signingOut === 'this' ? 'Signing out' : 'Sign out'}
               </button>
@@ -360,7 +365,7 @@ function Account() {
                 type="button"
                 className="btn btn-ghost account-signout-all"
                 onClick={() => signOut(true)}
-                disabled={Boolean(signingOut)}
+                aria-disabled={Boolean(signingOut)}
               >
                 {signingOut === 'all' ? 'Signing out everywhere' : 'Sign out of every device'}
               </button>

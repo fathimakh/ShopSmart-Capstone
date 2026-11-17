@@ -31,6 +31,9 @@ function Register() {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    // The button stays focusable while the account is being created (aria-disabled), so
+    // a refused sign up leaves focus on it; a second press is ignored here.
+    if (submitting) return
     setFormError('')
     const clientErrors = validateRegister(values)
     setErrors(clientErrors)
@@ -117,7 +120,7 @@ function Register() {
           </p>
         ) : null}
 
-        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+        <button type="submit" className="btn btn-primary btn-block" aria-disabled={submitting}>
           <FiUserPlus aria-hidden="true" />
           {submitting ? 'Creating your account' : 'Create account'}
         </button>

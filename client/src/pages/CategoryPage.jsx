@@ -203,6 +203,8 @@ function CategoryPage() {
                   onClick={() => {
                     setFilters(defaultFilters)
                     setQuery('')
+                    // This button goes away with the empty results, so focus moves to the search.
+                    document.getElementById('product-search')?.focus()
                   }}
                 >
                   Clear filters

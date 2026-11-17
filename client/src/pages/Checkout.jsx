@@ -597,7 +597,12 @@ function Checkout() {
                             <button
                               type="button"
                               className="btn btn-outline"
-                              onClick={() => updateQuantity(item.id, issue.available)}
+                              onClick={() => {
+                                updateQuantity(item.id, issue.available)
+                                // The button goes away with the problem, so focus moves
+                                // to the note that says what is left to do.
+                                setFocusTarget('checkout-place-error')
+                              }}
                             >
                               Change to {issue.available}
                               <span className="visually-hidden"> for {item.title}</span>
@@ -606,7 +611,10 @@ function Checkout() {
                           <button
                             type="button"
                             className="btn btn-ghost"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => {
+                              removeFromCart(item.id)
+                              setFocusTarget('checkout-place-error')
+                            }}
                           >
                             Remove from cart<span className="visually-hidden">: {item.title}</span>
                           </button>

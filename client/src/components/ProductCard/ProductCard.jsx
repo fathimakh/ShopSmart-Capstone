@@ -1,4 +1,4 @@
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { FiCheck, FiHeart, FiShoppingCart } from 'react-icons/fi'
 import StarRating from '../StarRating/StarRating'
@@ -14,6 +14,20 @@ function ProductCard({ product }) {
   const compared = isCompared(product.id)
   // Checkout would refuse it, so a sold out product is not offered for the cart at all.
   const soldOut = product.stock < 1
+  const cartLink = useRef(null)
+  const addedHere = useRef(false)
+
+  // Add to cart gives way to Go to cart, so focus moves to the link instead of falling
+  // back to the top of the page. Only after this card's own button was pressed.
+  useEffect(() => {
+    if (!inCart || !addedHere.current) return
+    addedHere.current = false
+    cartLink.current?.focus()
+  }, [inCart])
+
+  const add = () => {
+    addedHere.current = Boolean(addToCart(product.id))
+  }
 
   return (
     <article className="product-card card">
@@ -64,7 +78,7 @@ function ProductCard({ product }) {
             </button>
           ) : null}
           {inCart ? (
-            <Link className="btn btn-outline product-card-cart" to="/cart">
+            <Link className="btn btn-outline product-card-cart" to="/cart" ref={cartLink}>
               <FiCheck aria-hidden="true" />
               Go to cart
               <span className="visually-hidden"> - {product.title} is in your cart</span>
@@ -74,7 +88,7 @@ function ProductCard({ product }) {
             <button
               type="button"
               className="btn btn-primary product-card-cart"
-              onClick={() => addToCart(product.id)}
+              onClick={add}
             >
               <FiShoppingCart aria-hidden="true" />
               Add to cart

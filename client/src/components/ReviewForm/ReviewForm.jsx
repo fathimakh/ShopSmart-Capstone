@@ -139,10 +139,18 @@ function ReviewForm({ initial, onSubmit, onCancel }) {
       ) : null}
 
       <div className="review-form-actions">
-        <button type="submit" className="btn btn-primary" disabled={saving}>
+        {/* aria-disabled rather than disabled, so focus stays on the button while saving. */}
+        <button type="submit" className="btn btn-primary" aria-disabled={saving}>
           {saving ? 'Saving' : editing ? 'Save changes' : 'Post review'}
         </button>
-        <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={saving}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => {
+            if (!saving) onCancel()
+          }}
+          aria-disabled={saving}
+        >
           Cancel
         </button>
       </div>
